@@ -8,11 +8,10 @@ def run_game():
     pygame.init()
     tset = Settings()
 
-    # Set the title of the window
+    # Set the title of the window and fill with gray color
     pygame.display.set_caption("Checkers")
 
     running = True
-    # player_turn = True
 
     while running:
         # Handle events
@@ -22,56 +21,25 @@ def run_game():
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 gf.handle_mousedown(event, tset)
             elif event.type == pygame.MOUSEMOTION:
-                gf.handle_mousemotion(event, tset)
+                gf.handle_mousemotion(tset)
             elif event.type == pygame.MOUSEBUTTONUP:
                 gf.handle_mouseup(event, tset)
 
-        '''
-        # AI's turn
-        if not player_turn:  # Process AI logic only once per frame
-            gf.ai_move(tset.board)
-            player_turn = True  # Switch back to player's turn
-
-        # Check for a winner or tie
-        if gf.victory(tset.board):
-            print("Game Over! Winner detected.")
-            running = False
-        '''
-
+        # Clear the screen
         tset.window.fill((200, 200, 200))
 
-        # Draw vertical lines
-        gf.draw_lines(tset.window, tset.colors, tset.vline1_start_x,
-                      tset.vline1_start_y, tset.vline1_end_x, tset.vline1_end_y)
-        gf.draw_lines(tset.window, tset.colors, tset.vline2_start_x,
-                      tset.vline2_start_y, tset.vline2_end_x, tset.vline2_end_y)
-        gf.draw_lines(tset.window, tset.colors, tset.vline3_start_x,
-                      tset.vline3_start_y, tset.vline3_end_x, tset.vline3_end_y)
-        gf.draw_lines(tset.window, tset.colors, tset.vline4_start_x,
-                      tset.vline4_start_y, tset.vline4_end_x, tset.vline4_end_y)
-        gf.draw_lines(tset.window, tset.colors, tset.vline5_start_x,
-                      tset.vline5_start_y, tset.vline5_end_x, tset.vline5_end_y)
-        gf.draw_lines(tset.window, tset.colors, tset.vline6_start_x,
-                      tset.vline6_start_y, tset.vline6_end_x, tset.vline6_end_y)
-        gf.draw_lines(tset.window, tset.colors, tset.vline7_start_x,
-                      tset.vline7_start_y, tset.vline7_end_x, tset.vline7_end_y)
+        # Draw the board lines (vertical and horizontal)
+        for vline in range(1, 8):
+            gf.draw_lines(tset.window, tset.colors, getattr(tset, f'vline{vline}_start_x'),
+                          getattr(tset, f'vline{vline}_start_y'), getattr(tset, f'vline{vline}_end_x'),
+                          getattr(tset, f'vline{vline}_end_y'))
 
-        # Draw horizontal lines
-        gf.draw_lines(tset.window, tset.colors, tset.hline1_start_x,
-                      tset.hline1_start_y, tset.hline1_end_x, tset.hline1_end_y)
-        gf.draw_lines(tset.window, tset.colors, tset.hline2_start_x,
-                      tset.hline2_start_y, tset.hline2_end_x, tset.hline2_end_y)
-        gf.draw_lines(tset.window, tset.colors, tset.hline3_start_x,
-                      tset.hline3_start_y, tset.hline3_end_x, tset.hline3_end_y)
-        gf.draw_lines(tset.window, tset.colors, tset.hline4_start_x,
-                      tset.hline4_start_y, tset.hline4_end_x, tset.hline4_end_y)
-        gf.draw_lines(tset.window, tset.colors, tset.hline5_start_x,
-                      tset.hline5_start_y, tset.hline5_end_x, tset.hline5_end_y)
-        gf.draw_lines(tset.window, tset.colors, tset.hline6_start_x,
-                      tset.hline6_start_y, tset.hline6_end_x, tset.hline6_end_y)
-        gf.draw_lines(tset.window, tset.colors, tset.hline7_start_x,
-                      tset.hline7_start_y, tset.hline7_end_x, tset.hline7_end_y)
+        for hline in range(1, 8):
+            gf.draw_lines(tset.window, tset.colors, getattr(tset, f'hline{hline}_start_x'),
+                          getattr(tset, f'hline{hline}_start_y'), getattr(tset, f'hline{hline}_end_x'),
+                          getattr(tset, f'hline{hline}_end_y'))
 
+        # Draw non-dragged pieces
         for row in range(8):
             for col in range(8):
                 if tset.board[row][col] == 'black':
@@ -81,11 +49,16 @@ def run_game():
                     gf.draw_gamepiece(tset.window, row, col, tset.cell_width,
                                     tset.cell_height, tset.colors['red'], tset.radius)
 
+        # Draw the dragged piece, if any
+        if tset.dragging_piece:
+            mouse_x, mouse_y = pygame.mouse.get_pos()
+            gf.draw_dragged_piece(tset.window, mouse_x, mouse_y, tset)
+
         # Update the display
         pygame.display.flip()
 
         # Set the framerate
-        pygame.time.Clock().tick(10)
+        pygame.time.Clock().tick(60)
 
 
 run_game()

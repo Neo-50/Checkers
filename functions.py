@@ -21,7 +21,7 @@ def handle_mousedown(event, tset):
     for row in range(8):
         for col in range(8):
             piece_color = tset.board[row][col]  # Get the color from the board
-            if piece_color in ['black', 'red']:
+            if piece_color in ['red']:
                 piece_x = col * tset.cell_width + tset.cell_width // 2
                 piece_y = row * tset.cell_height + tset.cell_height // 2
                 radius = (tset.cell_width // 2) - tset.padding
@@ -56,10 +56,18 @@ def handle_mouseup(event, tset):
 
         # Validate move
         if 0 <= target_col < 8 and 0 <= target_row < 8:
-            # Update the board (or implement your move logic here)
-            tset.board[tset.dragging_piece[0]][tset.dragging_piece[1]] = None
-            tset.board[target_row][target_col] = tset.dragged_piece_color
-
+            # Define list of valid moves
+            valid_moves = [
+                (tset.dragging_piece[0] - 1, tset.dragging_piece[1] - 1),  # Forward left corner
+                (tset.dragging_piece[0] - 1, tset.dragging_piece[1] + 1),  # Forward right corner
+            ]
+            # Check if the target square is one of the valid moves
+            if (target_row, target_col) in valid_moves:
+                # Check if target square is not occupied
+                if tset.board[target_row][target_col] is None:
+                    # Update the board
+                    tset.board[tset.dragging_piece[0]][tset.dragging_piece[1]] = None
+                    tset.board[target_row][target_col] = tset.dragged_piece_color
         tset.dragging_piece = None  # Reset dragging state
 
 

@@ -29,11 +29,13 @@ class Settings:
         self.drag_offset_y = 0
         self.dragged_piece_color = 'red'
 
-        # Grid state: 3x3 matrix to track Xs and Os
+        # Initialize the board
         self.board = [
-            ['black' for _ in range(8)] if row < 2 else
-            ['red' for _ in range(8)] if row > 5 else
-            [None for _ in range(8)]
+            [
+                'black' if (row < 3 and (row + col) % 2 == 0) else
+                'red' if (row > 4 and (row + col) % 2 == 0) else
+                None for col in range(8)
+            ]
             for row in range(8)
         ]
 

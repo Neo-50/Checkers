@@ -23,6 +23,9 @@ class Settings:
         # Define game-piece radius
         self.radius = (self.cell_width // 2) - self.padding
 
+        # Define player move
+        self.player_turn = True
+
         # Define dragging variables
         self.dragging_piece = None  # Track which piece (if any) is being dragged
         self.drag_offset_x = 0  # To adjust for where the mouse grabs the piece

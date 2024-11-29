@@ -68,12 +68,11 @@ class Board:
     def draw_dragging_piece(self):
         if self.dragging_piece:
             mouse_x, mouse_y = pygame.mouse.get_pos()
-            adjusted_x = mouse_x  # Use the raw mouse position
-            adjusted_y = mouse_y  # Use the raw mouse position
-            print(f"Drawing dragged piece at: ({adjusted_x}, {adjusted_y})")
+            new_x = mouse_x - self.drag_offset_x
+            new_y = mouse_y - self.drag_offset_y
             pygame.draw.circle(self.window,
                                self.colors[self.dragged_piece_color],
-                               (adjusted_x, adjusted_y),
+                               (new_x, new_y),
                                self.radius)
 
     def ai_move(self):

@@ -61,16 +61,12 @@ class Game:
                         self.board.dragged_piece_color = piece_color  # Save the piece's color
                         self.board.drag_offset_x = mouse_x - piece_x
                         self.board.drag_offset_y = mouse_y - piece_y
-                        print(
-                            f"Dragging piece at: ({row}, {col}), Color: {piece_color}, "
-                            f"Offsets: ({self.board.drag_offset_x}, {self.board.drag_offset_y})")
+                        print(f"Offsets: ({self.board.drag_offset_x}, {self.board.drag_offset_y})")
                         break
 
     def handle_mousemotion(self):
         if self.board.dragging_piece:
-            mouse_x, mouse_y = pygame.mouse.get_pos()
-            self.board.drag_offset_x = mouse_x
-            self.board.drag_offset_y = mouse_y
+            self.board.draw_dragging_piece()
 
     def handle_mouseup(self, event):
         if self.board.dragging_piece:
@@ -93,4 +89,3 @@ class Game:
             print(f"Releasing piece at: ({target_row}, {target_col})")
 
         self.board.dragging_piece = None  # Reset dragging state
-

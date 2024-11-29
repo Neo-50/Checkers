@@ -47,13 +47,20 @@ class Board:
         self.window.fill((200, 200, 200))
 
     def draw_grid(self):
-        for i in range(1, 8):
-            start_x = i * (self.width // 8)
-            pygame.draw.line(self.window, self.colors['white'], (start_x, 0), (start_x, self.height))
+        light_color = (240, 217, 181)  # Light tan
+        dark_color = (181, 136, 99)  # Darker brown
 
-        for i in range(1, 8):
-            start_y = i * (self.height // 8)
-            pygame.draw.line(self.window, self.colors['white'], (0, start_y), (self.width, start_y))
+        for row in range(8):
+            for col in range(8):
+                rect = pygame.Rect(col * self.cell_width, row * self.cell_height, self.cell_width, self.cell_height)
+                if (row + col) % 2 == 0:
+                    color = light_color
+                else:
+                    if self.data[row][col]:  # Darker background if a piece is present
+                        color = (128, 70, 27)  # Darker shade for occupied squares
+                    else:
+                        color = dark_color
+                pygame.draw.rect(self.window, color, rect)
 
     def draw_pieces(self,):
         for row in range(8):

@@ -7,6 +7,8 @@ Responsibilies:
     2. Hold the board data (array)
     3. Make moves
 '''
+
+
 class Board:
     def __init__(self):
         self.data = [
@@ -53,30 +55,26 @@ class Board:
             start_y = i * (self.height // 8)
             pygame.draw.line(self.window, self.colors['white'], (0, start_y), (self.width, start_y))
 
-    def draw_pieces(self):
+    def draw_pieces(self,):
         for row in range(8):
             for col in range(8):
+                center_x = col * self.cell_width + self.cell_width // 2
+                center_y = row * self.cell_height + self.cell_height // 2
                 if self.data[row][col] == 'black':
-                    self.draw_piece(row, col, self.colors['black'])
+                    pygame.draw.circle(self.window, self.colors['black'], (center_x, center_y), self.radius)
                 elif self.data[row][col] == 'red':
-                    self.draw_piece(row, col, self.colors['red'])
-
-    def draw_piece(self, row, col, color = (255, 0, 0)):
-        center_x = col * self.cell_width + self.cell_width // 2
-        center_y = row * self.cell_height + self.cell_height // 2
-        self.draw_circle(center_x, center_y, color)
-    
-    def draw_circle(self, x, y, color):
-        pygame.draw.circle(self.window, color, (x, y), self.radius)
+                    pygame.draw.circle(self.window, self.colors['red'], (center_x, center_y), self.radius)
 
     def draw_dragging_piece(self):
         if self.dragging_piece:
             mouse_x, mouse_y = pygame.mouse.get_pos()
-            self.draw_piece(mouse_x, mouse_y)
-
-    # TODO
-    def player_move(self, row, col):
-        print('todo')
+            adjusted_x = mouse_x  # Use the raw mouse position
+            adjusted_y = mouse_y  # Use the raw mouse position
+            print(f"Drawing dragged piece at: ({adjusted_x}, {adjusted_y})")
+            pygame.draw.circle(self.window,
+                               self.colors[self.dragged_piece_color],
+                               (adjusted_x, adjusted_y),
+                               self.radius)
 
     def ai_move(self):
         ai_moves = []

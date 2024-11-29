@@ -7,6 +7,8 @@ Responsibilies:
     2. Deal with operating system stuff - mouse events
     3. Game loop - start() method
 '''
+
+
 class Game:
     def __init__(self):
         self.board = Board()
@@ -42,7 +44,6 @@ class Game:
                     self.handle_mousemotion()
                 elif event.type == pygame.MOUSEBUTTONUP:
                     self.handle_mouseup(event)
-                    self.player_turn = False
 
     def handle_mousedown(self, event):
         mouse_x, mouse_y = event.pos
@@ -60,36 +61,36 @@ class Game:
                         self.board.dragged_piece_color = piece_color  # Save the piece's color
                         self.board.drag_offset_x = mouse_x - piece_x
                         self.board.drag_offset_y = mouse_y - piece_y
+                        print(
+                            f"Dragging piece at: ({row}, {col}), Color: {piece_color}, "
+                            f"Offsets: ({self.board.drag_offset_x}, {self.board.drag_offset_y})")
                         break
 
     def handle_mousemotion(self):
         if self.board.dragging_piece:
             mouse_x, mouse_y = pygame.mouse.get_pos()
-            new_x = mouse_x - self.board.drag_offset_x
-            new_y = mouse_y - self.board.drag_offset_y
-            self.board.draw_circle(new_x, new_y, self.board.dragged_piece_color)
+            self.board.drag_offset_x = mouse_x
+            self.board.drag_offset_y = mouse_y
 
     def handle_mouseup(self, event):
         if self.board.dragging_piece:
             mouse_x, mouse_y = event.pos
-            
+
             target_col = mouse_x // self.board.cell_width
             target_row = mouse_y // self.board.cell_height
 
             # Validate move
             if 0 <= target_col < 8 and 0 <= target_row < 8:
-                # Define list of valid moves
                 valid_moves = [
-                    (self.board.dragging_piece[0] - 1, self.board.dragging_piece[1] - 1),  # Forward left corner
-                    (self.board.dragging_piece[0] - 1, self.board.dragging_piece[1] + 1),  # Forward right corner
+                    (self.board.dragging_piece[0] - 1, self.board.dragging_piece[1] - 1),
+                    (self.board.dragging_piece[0] - 1, self.board.dragging_piece[1] + 1),
                 ]
-                # Check if the target square is one of the valid moves
                 if (target_row, target_col) in valid_moves:
-                    # Check if target square is not occupied
                     if self.board.data[target_row][target_col] is None:
-                        # Update the board
                         self.board.data[self.board.dragging_piece[0]][self.board.dragging_piece[1]] = None
                         self.board.data[target_row][target_col] = self.board.dragged_piece_color
+                        self.player_turn = False
+            print(f"Releasing piece at: ({target_row}, {target_col})")
 
-            self.board.dragging_piece = None  # Reset dragging state
+        self.board.dragging_piece = None  # Reset dragging state
 

@@ -41,7 +41,8 @@ class Game:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     self.handle_mousedown(event)
                 elif event.type == pygame.MOUSEMOTION:
-                    self.handle_mousemotion()
+                    if self.board.dragging_piece:
+                        self.board.draw_dragging_piece()
                 elif event.type == pygame.MOUSEBUTTONUP:
                     self.handle_mouseup(event)
 
@@ -63,10 +64,6 @@ class Game:
                         self.board.drag_offset_y = mouse_y - piece_y
                         print(f"Offsets: ({self.board.drag_offset_x}, {self.board.drag_offset_y})")
                         break
-
-    def handle_mousemotion(self):
-        if self.board.dragging_piece:
-            self.board.draw_dragging_piece()
 
     def handle_mouseup(self, event):
         if self.board.dragging_piece:

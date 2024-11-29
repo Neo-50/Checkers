@@ -37,18 +37,19 @@ class Board:
             'white': (255, 255, 255)
         }
 
-    def draw(self):
+    def draw(self, valid_moves):
         self.clear()
-        self.draw_grid()
+        self.draw_grid(valid_moves)
         self.draw_pieces()
         self.draw_dragging_piece()
 
     def clear(self):
         self.window.fill((200, 200, 200))
 
-    def draw_grid(self):
+    def draw_grid(self, valid_moves):
         light_color = (240, 217, 181)  # Light tan
         dark_color = (181, 136, 99)  # Darker brown
+        border_color = (0, 255, 0)  # Green border for valid moves
 
         for row in range(8):
             for col in range(8):
@@ -60,7 +61,12 @@ class Board:
                         color = (128, 70, 27)  # Darker shade for occupied squares
                     else:
                         color = dark_color
+                # Draw the square
                 pygame.draw.rect(self.window, color, rect)
+
+                # Add a border for valid moves
+                if (row, col) in valid_moves:
+                    pygame.draw.rect(self.window, border_color, rect, 3)  # Thicker border
 
     def draw_pieces(self,):
         for row in range(8):

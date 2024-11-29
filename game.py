@@ -14,6 +14,7 @@ class Game:
         self.board = Board()
         self.running = True
         self.player_turn = True
+        self.valid_moves = []
         self.init_pygame()
 
     def init_pygame(self):
@@ -22,7 +23,7 @@ class Game:
 
     def start(self):
         while self.running:
-            self.board.draw()
+            self.board.draw(self.valid_moves)
             self.handle_events()
             self.ai_move()
             pygame.display.flip()
@@ -45,6 +46,7 @@ class Game:
                         self.board.draw_dragging_piece()
                 elif event.type == pygame.MOUSEBUTTONUP:
                     self.handle_mouseup(event)
+                    self.valid_moves = []  # Clear valid moves after the piece is dropped
 
     def handle_mousedown(self, event):
         mouse_x, mouse_y = event.pos
@@ -62,7 +64,10 @@ class Game:
                         self.board.dragged_piece_color = piece_color  # Save the piece's color
                         self.board.drag_offset_x = mouse_x - piece_x
                         self.board.drag_offset_y = mouse_y - piece_y
-                        print(f"Offsets: ({self.board.drag_offset_x}, {self.board.drag_offset_y})")
+                        self.valid_moves = [
+                            (self.board.dragging_piece[0] - 1, self.board.dragging_piece[1] - 1),
+                            (self.board.dragging_piece[0] - 1, self.board.dragging_piece[1] + 1),
+                        ]
                         break
 
     def handle_mouseup(self, event):
@@ -72,17 +77,14 @@ class Game:
             target_col = mouse_x // self.board.cell_width
             target_row = mouse_y // self.board.cell_height
 
-            # Validate move
-            if 0 <= target_col < 8 and 0 <= target_row < 8:
-                valid_moves = [
-                    (self.board.dragging_piece[0] - 1, self.board.dragging_piece[1] - 1),
-                    (self.board.dragging_piece[0] - 1, self.board.dragging_piece[1] + 1),
-                ]
-                if (target_row, target_col) in valid_moves:
-                    if self.board.data[target_row][target_col] is None:
+            if 0 <= target_col < 8 and 0 <= target_row < 8:  # Check if within boundaries
+                if (target_row, target_col) in self.valid_moves:   # Only forward-diagonal allowed
+                    if self.board.data[target_row][target_col] is None:  # Check if square is empty
+                        # Clear old position
                         self.board.data[self.board.dragging_piece[0]][self.board.dragging_piece[1]] = None
+                        # Set new position
                         self.board.data[target_row][target_col] = self.board.dragged_piece_color
-                        self.player_turn = False
+                        self.player_turn = False  # Change turn flag
             print(f"Releasing piece at: ({target_row}, {target_col})")
 
         self.board.dragging_piece = None  # Reset dragging state

@@ -15,6 +15,7 @@ class Game:
         self.running = True
         self.player_turn = True
         self.valid_moves = []
+        self.highlight_moves = []
         self.init_pygame()
 
     def init_pygame(self):
@@ -23,7 +24,7 @@ class Game:
 
     def start(self):
         while self.running:
-            self.board.draw(self.valid_moves)
+            self.board.draw(self.highlight_moves)
             self.handle_events()
             self.ai_move()
             pygame.display.flip()
@@ -46,7 +47,7 @@ class Game:
                         self.board.draw_dragging_piece()
                 elif event.type == pygame.MOUSEBUTTONUP:
                     self.handle_mouseup(event)
-                    self.valid_moves = []  # Clear valid moves after the piece is dropped
+                    self.highlight_moves = []  # Clear valid moves after the piece is dropped
 
     def handle_mousedown(self, event):
         mouse_x, mouse_y = event.pos
@@ -68,6 +69,13 @@ class Game:
                             (self.board.dragging_piece[0] - 1, self.board.dragging_piece[1] - 1),
                             (self.board.dragging_piece[0] - 1, self.board.dragging_piece[1] + 1),
                         ]
+
+                        # Check if the valid move squares are empty and add them to highlight_moves
+                        for move in self.valid_moves:
+                            target_row, target_col = move
+                            if 0 <= target_row < 8 and 0 <= target_col < 8:
+                                if self.board.data[target_row][target_col] is None:
+                                    self.highlight_moves.append((target_row, target_col))  # Append as tuple
                         break
 
     def handle_mouseup(self, event):
@@ -85,6 +93,5 @@ class Game:
                         # Set new position
                         self.board.data[target_row][target_col] = self.board.dragged_piece_color
                         self.player_turn = False  # Change turn flag
-            print(f"Releasing piece at: ({target_row}, {target_col})")
 
         self.board.dragging_piece = None  # Reset dragging state

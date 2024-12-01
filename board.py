@@ -26,10 +26,11 @@ class Board:
         self.padding = int(self.cell_width * 0.15)
         self.radius = (self.cell_width // 2) - self.padding
         
-        self.dragging_piece = None  # Track which piece (if any) is being dragged
-        self.drag_offset_x = 0  # To adjust for where the mouse grabs the piece
+        self.selected_piece = None
+        self.drag_offset_x = 0
         self.drag_offset_y = 0
-        self.dragged_piece_color = 'red'
+        self.selected_piece_color = 'red'
+        self.player_score = 0
 
         self.colors = {
             'black': (0, 0, 0),
@@ -37,16 +38,16 @@ class Board:
             'white': (255, 255, 255)
         }
 
-    def draw(self, highlight_moves):
+    def draw(self, valid_moves):
         self.clear()
-        self.draw_grid(highlight_moves)
+        self.draw_grid(valid_moves)
         self.draw_pieces()
         self.draw_dragging_piece()
 
     def clear(self):
         self.window.fill((200, 200, 200))
 
-    def draw_grid(self, highlight_moves):
+    def draw_grid(self, valid_moves):
         light_color = (240, 217, 181)  # Light tan
         dark_color = (181, 136, 99)  # Darker brown
         border_color = (0, 255, 0)  # Green border for valid moves
@@ -65,7 +66,7 @@ class Board:
                 pygame.draw.rect(self.window, color, rect)
 
                 # Add a border for valid moves
-                if (row, col) in highlight_moves:
+                if (row, col) in valid_moves:
                     pygame.draw.rect(self.window, border_color, rect, 3)
 
     def draw_pieces(self,):
@@ -79,37 +80,57 @@ class Board:
                     pygame.draw.circle(self.window, self.colors['red'], (center_x, center_y), self.radius)
 
     def draw_dragging_piece(self):
-        if self.dragging_piece:
+        if self.selected_piece:
             mouse_x, mouse_y = pygame.mouse.get_pos()
             new_x = mouse_x - self.drag_offset_x
             new_y = mouse_y - self.drag_offset_y
             pygame.draw.circle(self.window,
-                               self.colors[self.dragged_piece_color],
+                               self.colors[self.selected_piece_color],
                                (new_x, new_y),
                                self.radius)
 
     def ai_move(self):
-        ai_moves = []
+        capture_moves = []
+        regular_moves = []
 
         for row in range(8):
             for col in range(8):
-                if self.data[row][col] == 'black':
+                if self.data[row][col] == 'black':  # Check for AI pieces
                     potential_moves = [
                         (row + 1, col - 1),  # Forward-left
                         (row + 1, col + 1),  # Forward-right
                     ]
                     for target_row, target_col in potential_moves:
-                        # Ensure within bounds and target square is empty
                         if 0 <= target_row < 8 and 0 <= target_col < 8:
-                            if self.data[target_row][target_col] is None:
-                                ai_moves.append(((row, col), (target_row, target_col)))
+                            # Check if opponent's piece is in the target square
+                            if self.data[target_row][target_col] == 'red':
+                                # Calculate the landing square
+                                landing_row = target_row + (target_row - row)
+                                landing_col = target_col + (target_col - col)
+                                if (
+                                        0 <= landing_row < 8 and 0 <= landing_col < 8
+                                        and self.data[landing_row][landing_col] is None
+                                ):
+                                    capture_moves.append(
+                                        ((row, col), (landing_row, landing_col), (target_row, target_col)))
 
-        if not ai_moves:
+                            # Check for regular moves
+                            elif self.data[target_row][target_col] is None:
+                                regular_moves.append(((row, col), (target_row, target_col)))
+
+        if capture_moves:
+            # Execute a capture (prioritized over regular moves)
+            start, end, captured = choice(capture_moves)
+            print(f"AI captures piece at {captured} by moving from {start} to {end}")
+            self.data[start[0]][start[1]] = None  # Remove AI piece from start
+            self.data[captured[0]][captured[1]] = None  # Remove captured piece
+            self.data[end[0]][end[1]] = 'black'  # Place AI piece in landing square
+        elif regular_moves:
+            # Execute a regular move
+            start, end = choice(regular_moves)
+            print(f"AI moves from {start} to {end}")
+            self.data[start[0]][start[1]] = None  # Remove AI piece from start
+            self.data[end[0]][end[1]] = 'black'  # Place AI piece in target square
+        else:
             print("No valid moves for AI!")
-            return
 
-        # Randomly select a valid move
-        move = choice(ai_moves)
-        start, end = move
-        self.data[start[0]][start[1]] = None  # Remove piece from start position
-        self.data[end[0]][end[1]] = 'black'  # Place piece in target position

@@ -17,7 +17,7 @@ class Game:
         self.running = True
         self.player_turn = True
         self.possible_moves = []
-        self.non_capture_moves = []
+        self.regular_moves = []
         self.valid_moves = []
         self.capture_moves = []
         self.capture_piece = []
@@ -26,20 +26,23 @@ class Game:
         while self.running:
             self.board.draw(self.valid_moves)
             self.handle_events()
-            self.ai_move()
+            if not self.player_turn:
+                self.board.draw(self.valid_moves)
+                pygame.display.flip()  # Update the screen after player's turn
+                pygame.time.wait(500)  # Add a small delay for better pacing
+                self.board.ai_move()
+                self.board.draw(self.valid_moves)
+                pygame.display.flip()
+                pygame.time.wait(500)
+                self.player_turn = True  # Switch back to the player's turn
             pygame.display.flip()
             pygame.time.Clock().tick(60)
-
-    def ai_move(self):
-        if not self.player_turn:
-            self.board.ai_move()
-            self.player_turn = True
 
     def handle_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
-            elif self.player_turn:   # Event Listeners
+            if self.player_turn:   # Event Listeners
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     self.handle_mousedown(event)
                 elif event.type == pygame.MOUSEMOTION:
@@ -48,6 +51,7 @@ class Game:
                 elif event.type == pygame.MOUSEBUTTONUP:
                     self.handle_mouseup(event)
                     self.valid_moves = []
+                    pygame.time.wait(100)
 
     def handle_mousedown(self, event):
         mouse_x, mouse_y = event.pos
@@ -75,7 +79,7 @@ class Game:
                             target_row, target_col = move
                             if 0 <= target_row < 8 and 0 <= target_col < 8:
                                 if self.board.data[target_row][target_col] is None:
-                                    self.non_capture_moves.append((target_row, target_col))  # Append as tuple
+                                    self.regular_moves.append((target_row, target_col))  # Append as tuple
                                     self.valid_moves.append((target_row, target_col))
                                 # Check if target square contains an opponent's piece
                                 elif self.board.data[target_row][target_col] == 'black':
@@ -90,8 +94,8 @@ class Game:
                                             and 0 <= landing_col < 8
                                             and self.board.data[landing_row][landing_col] is None
                                     ):
-                                        self.valid_moves.append((landing_row, landing_col))  # Add landing square
-                                        self.capture_moves.append((landing_row, landing_col))
+                                        self.valid_moves.append((landing_row, landing_col))  # Add to vaild moves
+                                        self.capture_moves.append((landing_row, landing_col))  # Add to capture moves
                                         self.capture_piece = [target_row, target_col]  # Save opponent's piece location
                         break
 
@@ -102,23 +106,32 @@ class Game:
             target_col = mouse_x // self.board.cell_width
             target_row = mouse_y // self.board.cell_height
 
+            # Regular move
             if 0 <= target_col < 8 and 0 <= target_row < 8:  # Check if within boundaries
-                if (target_row, target_col) in self.non_capture_moves:   # Only forward-diagonal allowed
+                if (target_row, target_col) in self.regular_moves:   # Only forward-diagonal allowed
                     if self.board.data[target_row][target_col] is None:  # Check if square is empty
                         # Clear old position
                         self.board.data[self.board.selected_piece[0]][self.board.selected_piece[1]] = None
                         # Set new position
                         self.board.data[target_row][target_col] = self.board.selected_piece_color
                         self.player_turn = False  # Change turn flag
+                # Capture move
                 if (target_row, target_col) in self.capture_moves:
                     # Clear old position
                     self.board.data[self.board.selected_piece[0]][self.board.selected_piece[1]] = None
+                    # Clear opponent piece
+                    self.board.data[self.capture_piece[0]][self.capture_piece[1]] = None
                     # Set new position
                     self.board.data[target_row][target_col] = self.board.selected_piece_color
-                    # Capture opponent piece
-                    self.board.data[self.capture_piece[0]][self.capture_piece[1]] = None
+
+                    # Increase score, end turn
                     self.board.player_score += 1
+
+                    print(f'Captured piece at {self.capture_piece}. '
+                          f'Contents of cell at captured piece location: '
+                          f'{self.board.data[self.capture_piece[0]][self.capture_piece[1]]}'
+                          f'Player score is now: {self.board.player_score}')
+
                     self.player_turn = False  # Change turn flag
-                    print(f'Player score: {self.board.player_score}')
 
         self.board.selected_piece = None  # Reset dragging state

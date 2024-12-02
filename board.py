@@ -30,7 +30,9 @@ class Board:
         self.drag_offset_x = 0
         self.drag_offset_y = 0
         self.selected_piece_color = 'red'
+
         self.player_score = 0
+        self.ai_score = 0
 
         self.colors = {
             'black': (0, 0, 0),
@@ -101,7 +103,7 @@ class Board:
                         (row + 1, col + 1),  # Forward-right
                     ]
                     for target_row, target_col in potential_moves:
-                        if 0 <= target_row < 8 and 0 <= target_col < 8:
+                        if 0 <= target_row < 8 and 0 <= target_col < 8:  # Within boundaries
                             # Check if opponent's piece is in the target square
                             if self.data[target_row][target_col] == 'red':
                                 # Calculate the landing square
@@ -125,6 +127,9 @@ class Board:
             self.data[start[0]][start[1]] = None  # Remove AI piece from start
             self.data[captured[0]][captured[1]] = None  # Remove captured piece
             self.data[end[0]][end[1]] = 'black'  # Place AI piece in landing square
+            self.ai_score += 1
+            print('AI score is now: ', self.ai_score)
+            pygame.display.flip()
         elif regular_moves:
             # Execute a regular move
             start, end = choice(regular_moves)

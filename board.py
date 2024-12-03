@@ -29,7 +29,7 @@ class Board:
         self.selected_piece = None
         self.drag_offset_x = 0
         self.drag_offset_y = 0
-        self.selected_piece_color = 'red'
+        self.selected_piece_color = None
 
         self.player_score = 0
         self.ai_score = 0
@@ -37,7 +37,8 @@ class Board:
         self.colors = {
             'black': (0, 0, 0),
             'red': (255, 0, 0),
-            'white': (255, 255, 255)
+            'white': (255, 255, 255),
+            'rking': (255, 255, 255)
         }
 
     def draw(self, valid_moves):
@@ -80,6 +81,8 @@ class Board:
                     pygame.draw.circle(self.window, self.colors['black'], (center_x, center_y), self.radius)
                 elif self.data[row][col] == 'red':
                     pygame.draw.circle(self.window, self.colors['red'], (center_x, center_y), self.radius)
+                elif self.data[row][col] == 'rking':
+                    pygame.draw.circle(self.window, self.colors['white'], (center_x, center_y), self.radius)
 
     def draw_dragging_piece(self):
         if self.selected_piece:
@@ -105,7 +108,7 @@ class Board:
                     for target_row, target_col in potential_moves:
                         if 0 <= target_row < 8 and 0 <= target_col < 8:  # Within boundaries
                             # Check if opponent's piece is in the target square
-                            if self.data[target_row][target_col] == 'red':
+                            if self.data[target_row][target_col] in ['red', 'rking']:
                                 # Calculate the landing square
                                 landing_row = target_row + (target_row - row)
                                 landing_col = target_col + (target_col - col)
@@ -129,7 +132,6 @@ class Board:
             self.data[end[0]][end[1]] = 'black'  # Place AI piece in landing square
             self.ai_score += 1
             print('AI score is now: ', self.ai_score)
-            pygame.display.flip()
         elif regular_moves:
             # Execute a regular move
             start, end = choice(regular_moves)
@@ -138,4 +140,3 @@ class Board:
             self.data[end[0]][end[1]] = 'black'  # Place AI piece in target square
         else:
             print("No valid moves for AI!")
-

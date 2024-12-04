@@ -50,7 +50,6 @@ class Game:
                         self.board.draw_dragging_piece()
                 elif event.type == pygame.MOUSEBUTTONUP:
                     self.handle_mouseup(event)
-                    self.valid_moves = []
                     pygame.time.wait(100)
 
     def select_piece(self, event, row, col, piece_color):
@@ -80,6 +79,7 @@ class Game:
                             (self.board.selected_piece[0] - 1, self.board.selected_piece[1] - 1),  # Top left
                             (self.board.selected_piece[0] - 1, self.board.selected_piece[1] + 1),  # Top right
                         ]
+                        print('Potential moves: ', self.possible_moves)
                         self.handle_move(row, col)
                 elif piece_color in ['rking']:
                     if self.select_piece(event, row, col, piece_color):
@@ -99,6 +99,7 @@ class Game:
                 if self.board.data[target_row][target_col] is None:
                     self.regular_moves.append((target_row, target_col))  # Append as tuple
                     self.valid_moves.append((target_row, target_col))
+                    print('Regular moves mousedown: ', self.regular_moves)
                 # Check if target square contains an opponent's piece
                 elif self.board.data[target_row][target_col] in ['black', 'bking']:
 
@@ -115,6 +116,7 @@ class Game:
                         self.valid_moves.append((landing_row, landing_col))  # Add to vaild moves
                         self.capture_moves.append((landing_row, landing_col))  # Add to capture moves
                         self.capture_piece = [target_row, target_col]  # Save opponent's piece location
+                        print('Capture moves mousedown: ', self.capture_moves)
                         break
 
     def handle_mouseup(self, event):
@@ -132,6 +134,10 @@ class Game:
                     self.board.selected_piece_color = 'rking'
                 # Set new position
                 self.board.data[target_row][target_col] = self.board.selected_piece_color
+                print(f'Player moved from {self.board.selected_piece[0]}, {self.board.selected_piece[1]} to '
+                      f'{target_row}, {target_col}')
+                print('Regular moves mouseup: ', self.regular_moves)
+                print('Capture moves mouseup: ', self.capture_moves)
                 self.player_turn = False  # Change turn flag
 
             if (target_row, target_col) in self.capture_moves:
@@ -156,4 +162,7 @@ class Game:
 
                 self.player_turn = False  # Change turn flag
 
+        self.regular_moves = []
+        self.valid_moves = []
+        self.capture_moves = []
         self.board.selected_piece = None  # Reset dragging state

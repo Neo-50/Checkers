@@ -1,6 +1,9 @@
 import pygame
 from random import choice
 
+from constants import *
+from piece import Piece
+
 '''
 Responsibilies: 
     1. Draw the game grid and pieces on the screen (shapes, colors)
@@ -8,81 +11,78 @@ Responsibilies:
     3. Make moves
 '''
 
-
 class Board:
-    def __init__(self):
-        self.data = [
-            [
-                'black' if (row < 3 and (row + col) % 2 == 0) else
-                'red' if (row > 4 and (row + col) % 2 == 0) else
-                None for col in range(8)
-            ]
-            for row in range(8)
+    def __init__(self, window):
+        self.window = window
+        self.pieces = [
+            # Computer
+            Piece(self.window, 0, 0, False), Piece(self.window, 2, 0, False), Piece(self.window, 4, 0, False), Piece(self.window, 6, 0, False),
+            Piece(self.window, 1, 1, False), Piece(self.window, 3, 1, False), Piece(self.window, 5, 1, False), Piece(self.window, 7, 1, False),
+            Piece(self.window, 0, 2, False), Piece(self.window, 2, 2, False), Piece(self.window, 4, 2, False), Piece(self.window, 6, 2, False),
+            # Player
+            Piece(self.window, 0, 5, True), Piece(self.window, 2, 5, True), Piece(self.window, 4, 5, True), Piece(self.window, 6, 5, True),
+            Piece(self.window, 1, 6, True), Piece(self.window, 3, 6, True), Piece(self.window, 5, 6, True), Piece(self.window, 7, 6, True),
+            Piece(self.window, 0, 7, True), Piece(self.window, 2, 7, True), Piece(self.window, 4, 7, True), Piece(self.window, 6, 7, True)
         ]
-        self.width, self.height = 800, 800
-        self.window = pygame.display.set_mode((self.width, self.height))
-        self.cell_width = self.width // 8
-        self.cell_height = self.height // 8
-        self.padding = int(self.cell_width * 0.15)
-        self.radius = (self.cell_width // 2) - self.padding
+        #self.data = [
+        #    [
+        #        'black' if (row < 3 and (row + col) % 2 == 0) else
+        #        'red' if (row > 4 and (row + col) % 2 == 0) else
+        #        None for col in range(8)
+        #    ]
+        #    for row in range(8)
+        #]
         
+        self.player_turn = True
+
         self.selected_piece = None
         self.drag_offset_x = 0
         self.drag_offset_y = 0
-        self.selected_piece_color = None
 
         self.player_score = 0
         self.ai_score = 0
 
-        self.colors = {
-            'black': (0, 0, 0),
-            'red': (255, 0, 0),
-            'white': (255, 255, 255),
-            'rking': (255, 255, 255)
-        }
+        self.possible_moves = []
+        self.regular_moves = []
+        self.valid_moves = []
+        self.capture_moves = []
+        self.capture_piece = []
 
-    def draw(self, valid_moves):
+    def update(self):
+        if not self.player_turn:
+            self.ai_move()
+            self.player_turn = True
+
+    def draw(self):
         self.clear()
-        self.draw_grid(valid_moves)
+        self.draw_grid()
         self.draw_pieces()
-        self.draw_dragging_piece()
+        #self.draw_dragging_piece()
 
     def clear(self):
         self.window.fill((200, 200, 200))
 
-    def draw_grid(self, valid_moves):
+    def draw_grid(self):
         light_color = (240, 217, 181)  # Light tan
         dark_color = (181, 136, 99)  # Darker brown
-        border_color = (0, 255, 0)  # Green border for valid moves
+        #border_color = (0, 255, 0)  # Green border for valid moves
 
         for row in range(8):
             for col in range(8):
-                rect = pygame.Rect(col * self.cell_width, row * self.cell_height, self.cell_width, self.cell_height)
+                rect = pygame.Rect(col * CELL_WIDTH, row * CELL_HEIGHT, CELL_WIDTH, CELL_HEIGHT)
                 if (row + col) % 2 == 0:
                     color = light_color
                 else:
-                    if self.data[row][col]:  # Darker background if a piece is present
-                        color = (128, 70, 27)  # Darker shade for occupied squares
-                    else:
-                        color = dark_color
-                # Draw the square
+                    color = dark_color
                 pygame.draw.rect(self.window, color, rect)
 
                 # Add a border for valid moves
-                if (row, col) in valid_moves:
-                    pygame.draw.rect(self.window, border_color, rect, 3)
+                #if (row, col) in self.valid_moves:
+                #    pygame.draw.rect(self.window, border_color, rect, 3)
 
     def draw_pieces(self,):
-        for row in range(8):
-            for col in range(8):
-                center_x = col * self.cell_width + self.cell_width // 2
-                center_y = row * self.cell_height + self.cell_height // 2
-                if self.data[row][col] == 'black':
-                    pygame.draw.circle(self.window, self.colors['black'], (center_x, center_y), self.radius)
-                elif self.data[row][col] == 'red':
-                    pygame.draw.circle(self.window, self.colors['red'], (center_x, center_y), self.radius)
-                elif self.data[row][col] == 'rking':
-                    pygame.draw.circle(self.window, self.colors['white'], (center_x, center_y), self.radius)
+        for piece in self.pieces:
+            piece.draw()
 
     def draw_dragging_piece(self):
         if self.selected_piece:
@@ -90,9 +90,10 @@ class Board:
             new_x = mouse_x - self.drag_offset_x
             new_y = mouse_y - self.drag_offset_y
             pygame.draw.circle(self.window,
-                               self.colors[self.selected_piece_color],
+                               # COLORS['white'] if self.selected_piece.is_king() else COLORS['red'],
+                               COLORS['red'],
                                (new_x, new_y),
-                               self.radius)
+                               PIECE_RADIUS)
 
     def ai_move(self):
         capture_moves = []
@@ -140,3 +141,122 @@ class Board:
             self.data[end[0]][end[1]] = 'black'  # Place AI piece in target square
         else:
             print("No valid moves for AI!")
+
+
+
+
+
+    def select_piece(self, event, row, col, piece_color):
+        mouse_x, mouse_y = event.pos
+        piece_x = col * CELL_WIDTH + CELL_WIDTH // 2
+        piece_y = row * CELL_HEIGHT + CELL_HEIGHT // 2
+        radius = (CELL_WIDTH // 2) - PADDING
+
+        # Check if the click is within the piece's circle
+        if (mouse_x - piece_x) ** 2 + (mouse_y - piece_y) ** 2 <= radius ** 2:
+            # Set dragging-related attributes
+            self.selected_piece = (row, col)
+            self.selected_piece_color = piece_color
+            self.drag_offset_x = mouse_x - piece_x
+            self.drag_offset_y = mouse_y - piece_y
+            return True  # Indicate that a piece was selected
+
+        return False  # No piece was selected
+
+    def handle_mousedown(self, event):
+        for row in range(8):
+            for col in range(8):
+                piece_color = self.data[row][col]  # Get the color from the board
+                if piece_color in ['red']:
+                    if self.select_piece(event, row, col, piece_color):
+                        self.possible_moves = [
+                            (self.selected_piece[0] - 1, self.selected_piece[1] - 1),  # Top left
+                            (self.selected_piece[0] - 1, self.selected_piece[1] + 1),  # Top right
+                        ]
+                        print('Potential moves: ', self.possible_moves)
+                        self.handle_move(row, col)
+                elif piece_color in ['rking']:
+                    if self.select_piece(event, row, col, piece_color):
+                        self.possible_moves = [
+                            (self.selected_piece[0] - 1, self.selected_piece[1] - 1),  # Top left
+                            (self.selected_piece[0] - 1, self.selected_piece[1] + 1),  # Top right
+                            (self.selected_piece[0] + 1, self.selected_piece[1] - 1),  # Top left
+                            (self.selected_piece[0] + 1, self.selected_piece[1] + 1),  # Top right
+                        ]
+                        self.handle_move(row, col)
+
+    def handle_move(self, row, col):
+        # Check if within bounds and empty
+        for move in self.possible_moves:
+            target_row, target_col = move
+            if 0 <= target_row < 8 and 0 <= target_col < 8:  # Check within boundaries
+                if self.data[target_row][target_col] is None:
+                    self.regular_moves.append((target_row, target_col))  # Append as tuple
+                    self.valid_moves.append((target_row, target_col))
+                    print('Regular moves mousedown: ', self.regular_moves)
+                # Check if target square contains an opponent's piece
+                elif self.data[target_row][target_col] in ['black', 'bking']:
+
+                    # Calculate the landing square for a capture
+                    landing_row = target_row - (row - target_row)  # Mirror target_row
+                    landing_col = target_col - (col - target_col)  # Mirror target_col
+
+                    # Ensure landing square is within bounds and empty
+                    if (
+                            0 <= landing_row < 8
+                            and 0 <= landing_col < 8
+                            and self.data[landing_row][landing_col] is None
+                    ):
+                        self.valid_moves.append((landing_row, landing_col))  # Add to vaild moves
+                        self.capture_moves.append((landing_row, landing_col))  # Add to capture moves
+                        self.capture_piece = [target_row, target_col]  # Save opponent's piece location
+                        print('Capture moves mousedown: ', self.capture_moves)
+                        break
+
+    def handle_mouseup(self, event):
+        if self.selected_piece:
+            mouse_x, mouse_y = event.pos
+
+            target_col = mouse_x // CELL_WIDTH
+            target_row = mouse_y // CELL_HEIGHT
+
+            if (target_row, target_col) in self.regular_moves:
+                # Clear old position
+                self.data[self.selected_piece[0]][self.selected_piece[1]] = None
+                # King if end of board
+                if target_row == 0:
+                    self.selected_piece_color = 'rking'
+                # Set new position
+                self.data[target_row][target_col] = self.selected_piece_color
+                print(f'Player moved from {self.selected_piece[0]}, {self.selected_piece[1]} to '
+                      f'{target_row}, {target_col}')
+                print('Regular moves mouseup: ', self.regular_moves)
+                print('Capture moves mouseup: ', self.capture_moves)
+                self.player_turn = False  # Change turn flag
+
+            if (target_row, target_col) in self.capture_moves:
+                # Clear old position
+                self.data[self.selected_piece[0]][self.selected_piece[1]] = None
+                # King if end of board
+                if target_row == 0:
+                    self.selected_piece_color = 'rking'
+                # Set new position
+                self.data[target_row][target_col] = self.selected_piece_color
+                pygame.time.wait(300)
+                # Clear opponent piece
+                self.data[self.capture_piece[0]][self.capture_piece[1]] = None
+
+                # Increase score, end turn
+                self.player_score += 1
+
+                print(f'Player captured piece at {self.capture_piece}. \n'
+                      f'Contents of cell at captured piece location: '
+                      f'{self.data[self.capture_piece[0]][self.capture_piece[1]]} \n'
+                      f'Player score is now: {self.player_score}')
+
+                self.player_turn = False  # Change turn flag
+
+        self.regular_moves = []
+        self.valid_moves = []
+        self.capture_moves = []
+        self.selected_piece = None  # Reset dragging state

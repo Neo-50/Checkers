@@ -54,7 +54,7 @@ class Board:
         self.clear()
         self.draw_grid()
         self.draw_pieces()
-        # self.draw_dragging_piece()
+        self.draw_dragging_piece()
 
     def clear(self):
         self.window.fill((200, 200, 200))
@@ -86,29 +86,49 @@ class Board:
         row = mouse_y // CELL_HEIGHT
         col = mouse_x // CELL_WIDTH
         radius = (CELL_WIDTH // 2) - PADDING
-        print(f'Row: {row} \nCol: {col}')
+        print(f'Row: {row} Col: {col}')
         for piece in self.pieces:
             piece_x = piece.col * CELL_WIDTH + CELL_WIDTH // 2
             piece_y = piece.row * CELL_HEIGHT + CELL_HEIGHT // 2
             if (piece.row == row and piece.col == col) and piece.is_player:
                 if (mouse_x - piece_x) ** 2 + (mouse_y - piece_y) ** 2 <= radius ** 2:
                     # Set dragging-related attributes
-                    # self.selected_piece = (row, col)
-                    # self.drag_offset_x = mouse_x - piece_x
-                    # self.drag_offset_y = mouse_y - piece_y
+                    self.selected_piece = (row, col)
+                    self.drag_offset_x = mouse_x - piece_x
+                    self.drag_offset_y = mouse_y - piece_y
                     print(f'Piece selected at: {row}, {col}')
-            # return row, col
-        # return False  # No piece was selected
+                    self.possible_moves = [
+                        (self.selected_piece[0] - 1, self.selected_piece[1] - 1),  # Top left
+                        (self.selected_piece[0] - 1, self.selected_piece[1] + 1),  # Top right
+                    ]
+                    print('Potential moves: ', self.possible_moves)
+                    # return row, col
+            # return False  # No piece was selected
 
-        # if piece_row and piece_col:
-        #     print(f'Piece selected at: {piece_row}, {piece_col}')
-        # print(f'Row: {row} \nCol: {col}')
-        # for piece in self.pieces:
-        #     if piece.row == row and piece.col == col:
-        #         print('Piece found at ', row, col)
+    def draw_dragging_piece(self):
+        if self.selected_piece:
+            mouse_x, mouse_y = pygame.mouse.get_pos()
+            new_x = mouse_x - self.drag_offset_x
+            new_y = mouse_y - self.drag_offset_y
+
+            pygame.draw.circle(self.window,
+                               # COLORS['white'] if self.selected_piece.is_king() else COLORS['red'],
+                               COLORS['red'],
+                               (new_x, new_y),
+                               PIECE_RADIUS)
+
+    def handle_mouseup(self, event):
+        if self.selected_piece:
+            mouse_x, mouse_y = pygame.mouse.get_pos()
+            self.pieces.row = mouse_y // CELL_HEIGHT
+            self.pieces.col = mouse_x // CELL_WIDTH
+
+            # Reset selected piece and stop dragging
+            self.selected_piece = None
 
 
 '''
+
     def select_piece(self, mouse_x, mouse_y, row, col):
         piece_x = col * CELL_WIDTH + CELL_WIDTH // 2
         piece_y = row * CELL_HEIGHT + CELL_HEIGHT // 2
@@ -132,20 +152,6 @@ class Board:
                 return target_row, target_col
         return None
 
-    def handle_mousedown(self, event):
-        # Call select_piece to try selecting a piece
-        target_piece_row, target_piece_col = self.select_piece(event)
-        if target_piece_row:  # If a piece was selected
-            print(f"Piece selected: {target_piece_row}, {target_piece_col}")
-        else:
-            print("No piece selected.")
-
-            
-            self.possible_moves = [
-                (self.selected_piece[0] - 1, self.selected_piece[1] - 1),  # Top left
-                (self.selected_piece[0] - 1, self.selected_piece[1] + 1),  # Top right
-            ]
-            print('Potential moves: ', self.possible_moves)
             
     def select_piece(self, event, row, col, piece_color):
         mouse_x, mouse_y = event.pos
@@ -187,19 +193,7 @@ class Board:
                             (self.selected_piece[0] + 1, self.selected_piece[1] + 1),  # Top right
                         ]
                         self.handle_move(row, col)
-                        
-    def draw_dragging_piece(self):
-        if self.selected_piece:
-            mouse_x, mouse_y = pygame.mouse.get_pos()
-            new_x = mouse_x - self.drag_offset_x
-            new_y = mouse_y - self.drag_offset_y
-            pygame.draw.circle(self.window,
-                               # COLORS['white'] if self.selected_piece.is_king() else COLORS['red'],
-                               COLORS['red'],
-                               (new_x, new_y),
-                               PIECE_RADIUS)
-
-
+                    
 
     def ai_move(self):
         capture_moves = []

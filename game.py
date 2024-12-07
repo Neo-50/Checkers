@@ -39,9 +39,9 @@ class Game:
             if self.player_turn:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     self.board.handle_mousedown(event)
-            #     elif event.type == pygame.MOUSEMOTION:
-            #         if self.board.selected_piece:
-            #             self.board.draw_dragging_piece()
-            #     elif event.type == pygame.MOUSEBUTTONUP:
-            #         self.board.handle_mouseup(event)
-            #         pygame.time.wait(100)
+                elif event.type == pygame.MOUSEMOTION:
+                    if self.board.selected_piece:
+                        self.board.draw_dragging_piece()
+                    elif event.type == pygame.MOUSEBUTTONUP:
+                        self.board.handle_mouseup(event)
+                        pygame.time.wait(100)

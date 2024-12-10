@@ -104,7 +104,6 @@ class Board:
                 if (mouse_x - piece_x) ** 2 + (mouse_y - piece_y) ** 2 <= radius ** 2:
                     # Set dragging-related attributes
                     self.selected_piece = (row, col)
-                    self.selected_piece_color = 'red'
                     self.drag_offset_x = mouse_x - piece_x
                     self.drag_offset_y = mouse_y - piece_y
                     print(f'Piece selected at: {row}, {col}')
@@ -112,7 +111,13 @@ class Board:
                         (self.selected_piece[0] - 1, self.selected_piece[1] - 1),  # Top left
                         (self.selected_piece[0] - 1, self.selected_piece[1] + 1),  # Top right
                     ]
-                    print('Potential moves: ', self.possible_moves)
+                    if piece.is_king:
+                        self.possible_moves = [
+                            (self.selected_piece[0] - 1, self.selected_piece[1] - 1),  # Top left
+                            (self.selected_piece[0] - 1, self.selected_piece[1] + 1),  # Top right
+                            (self.selected_piece[0] + 1, self.selected_piece[1] - 1),  # Top left
+                            (self.selected_piece[0] + 1, self.selected_piece[1] + 1),  # Top right
+                        ]
                     self.handle_move(row, col)
 
     def handle_move(self, row, col):
@@ -120,40 +125,42 @@ class Board:
         for move in self.possible_moves:
             target_row, target_col = move
             if 0 <= target_row < 8 and 0 <= target_col < 8:  # Check within boundaries
-                if self.find_piece(target_row, target_col) is None:
+                if self.find_piece(target_row, target_col) is None:  # Check if empty
                     self.regular_moves.append((target_row, target_col))  # Append as tuple
                     self.valid_moves.append((target_row, target_col))
-                    print('Regular moves mousedown: ', self.regular_moves)
+
+                else:
                     # Check if target square contains an opponent's piece
-                elif self.find_piece(target_row, target_col) in ['black', 'bking']:
+                    enemy_piece = self.find_piece(target_row, target_col)
+                    if not enemy_piece.is_player:
+                        # Calculate the landing square for a capture
+                        landing_row = target_row - (row - target_row)  # Mirror target_row
+                        landing_col = target_col - (col - target_col)  # Mirror target_col
 
-                    # Calculate the landing square for a capture
-                    landing_row = target_row - (row - target_row)  # Mirror target_row
-                    landing_col = target_col - (col - target_col)  # Mirror target_col
-
-                    # Ensure landing square is within bounds and empty
-                    if (
-                            0 <= landing_row < 8
-                            and 0 <= landing_col < 8
-                            and self.find_piece(landing_row, landing_col) is None
-                    ):
-                        self.valid_moves.append((landing_row, landing_col))  # Add to vaild moves
-                        self.capture_moves.append((landing_row, landing_col))  # Add to capture moves
-                        self.capture_piece = [target_row, target_col]  # Save opponent's piece location
-                        print('Capture moves mousedown: ', self.capture_moves)
-                        break
+                        # Ensure landing square is within bounds and empty
+                        if (
+                                0 <= landing_row < 8
+                                and 0 <= landing_col < 8
+                                and self.find_piece(landing_row, landing_col) is None
+                        ):
+                            self.valid_moves.append((landing_row, landing_col))  # Add to vaild moves
+                            self.capture_moves.append((landing_row, landing_col))  # Add to capture moves
+                            self.capture_piece.append((target_row, target_col))  # Save opponent's piece location
 
     def draw_dragging_piece(self):
         if self.selected_piece:
             piece = self.find_piece(self.selected_piece[0], self.selected_piece[1])
             if piece:
+                if piece.is_king:
+                    color = COLORS['white']
+                else:
+                    color = COLORS['red']
                 piece.hidden = True
                 mouse_x, mouse_y = pygame.mouse.get_pos()
                 new_x = mouse_x - self.drag_offset_x
                 new_y = mouse_y - self.drag_offset_y
                 pygame.draw.circle(self.window,
-                                   # COLORS['white'] if self.selected_piece.is_king() else COLORS['red'],
-                                   COLORS['red'],
+                                   color,
                                    (new_x, new_y),
                                    PIECE_RADIUS)
 
@@ -182,9 +189,38 @@ class Board:
 
                 self.player_turn = False
 
+                pygame.time.wait(200)
+
+            if (target_row, target_col) in self.capture_moves:
+                # Update coords for piece object
+                piece = self.find_piece(self.selected_piece[0], self.selected_piece[1])
+                if piece:
+                    piece.row = target_row
+                    piece.col = target_col
+
+                # King if end of board
+                if target_row == 0:
+                    piece.is_king = True
+
+                enemy_piece = self.find_piece(self.capture_piece[0], self.capture_piece[1])
+                if enemy_piece:
+                    self.pieces.remove(enemy_piece)
+                    print(f"Player captures piece at {enemy_piece}")
+
+                pygame.time.wait(200)
+
+                # Increase score, end turn
+                self.player_score += 1
+
+                print(f'Player captured piece at {self.capture_piece}. \n'
+                      f'Player score is now: {self.player_score}')
+
+                self.player_turn = False
+
         self.regular_moves = []
         self.valid_moves = []
         self.capture_moves = []
+        self.capture_piece = []
         self.selected_piece = None
 
     def ai_move(self):
@@ -227,7 +263,7 @@ class Board:
 
             capture_piece = self.find_piece(captured[0], captured[1])
             if capture_piece:
-                self.pieces.remove(capture_piece)  # Remove captured piece
+                self.pieces.remove(capture_piece)
             print(f"AI captures piece at {captured} by moving from {start} to {end}")
 
             self.ai_score += 1

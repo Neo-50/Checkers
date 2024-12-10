@@ -46,7 +46,8 @@ class Board:
         self.regular_moves = []
         self.valid_moves = []
         self.capture_moves = []
-        self.capture_piece = []
+        self.capture_pieces = []
+        self.capture_piece = None
 
     def update(self):
         if not self.player_turn:
@@ -67,6 +68,7 @@ class Board:
         light_color = (240, 217, 181)  # Light tan
         dark_color = (181, 136, 99)  # Darker brown
         border_color = (0, 255, 0)  # Green border for valid moves
+        capture_color = (255, 0, 0)
 
         for row in range(8):
             for col in range(8):
@@ -78,8 +80,11 @@ class Board:
                 pygame.draw.rect(self.window, color, rect)
 
                 # Add a border for valid moves
-                if (row, col) in self.valid_moves:
+                if (row, col) in self.regular_moves:
                     pygame.draw.rect(self.window, border_color, rect, 3)
+
+                if (row, col) in self.capture_moves:
+                    pygame.draw.rect(self.window, capture_color, rect, 3)
 
     def draw_pieces(self):
         for piece in self.pieces:
@@ -106,7 +111,6 @@ class Board:
                     self.selected_piece = (row, col)
                     self.drag_offset_x = mouse_x - piece_x
                     self.drag_offset_y = mouse_y - piece_y
-                    print(f'Piece selected at: {row}, {col}')
                     self.possible_moves = [
                         (self.selected_piece[0] - 1, self.selected_piece[1] - 1),  # Top left
                         (self.selected_piece[0] - 1, self.selected_piece[1] + 1),  # Top right
@@ -121,11 +125,15 @@ class Board:
                     self.handle_move(row, col)
 
     def handle_move(self, row, col):
+        self.capture_moves.clear()
+        self.capture_pieces.clear()
+        self.regular_moves.clear()
         # Check if within bounds and empty
         for move in self.possible_moves:
             target_row, target_col = move
             if 0 <= target_row < 8 and 0 <= target_col < 8:  # Check within boundaries
-                if self.find_piece(target_row, target_col) is None:  # Check if empty
+                target_square = self.find_piece(target_row, target_col)
+                if not target_square:  # Check if empty
                     self.regular_moves.append((target_row, target_col))  # Append as tuple
                     self.valid_moves.append((target_row, target_col))
 
@@ -145,7 +153,8 @@ class Board:
                         ):
                             self.valid_moves.append((landing_row, landing_col))  # Add to vaild moves
                             self.capture_moves.append((landing_row, landing_col))  # Add to capture moves
-                            self.capture_piece.append((target_row, target_col))  # Save opponent's piece location
+                            self.capture_pieces.append((target_row, target_col))  # Save opponent's piece location
+                            print('Added to capture_pieces list: ', self.capture_pieces)
 
     def draw_dragging_piece(self):
         if self.selected_piece:
@@ -179,7 +188,6 @@ class Board:
                 # Update coords for piece object
                 piece = self.find_piece(self.selected_piece[0], self.selected_piece[1])
                 if piece:
-                    print('Player moved from ', self.selected_piece[0], 'to ', self.selected_piece[1])
                     piece.row = target_row
                     piece.col = target_col
 
@@ -191,7 +199,8 @@ class Board:
 
                 pygame.time.wait(200)
 
-            if (target_row, target_col) in self.capture_moves:
+            elif (target_row, target_col) in self.capture_moves:
+
                 # Update coords for piece object
                 piece = self.find_piece(self.selected_piece[0], self.selected_piece[1])
                 if piece:
@@ -202,20 +211,42 @@ class Board:
                 if target_row == 0:
                     piece.is_king = True
 
-                enemy_piece = self.find_piece(self.capture_piece[0], self.capture_piece[1])
-                if enemy_piece:
-                    self.pieces.remove(enemy_piece)
-                    print(f"Player captures piece at {enemy_piece}")
+                # Remove enemy piece
+                if self.capture_moves and self.capture_pieces:  # Ensure lists are not empty
+                    if (target_row, target_col) == self.capture_moves[0]:
+                        print('1 enemy piece found at: ', self.capture_pieces[0])
 
-                pygame.time.wait(200)
+                        enemy_piece = self.find_piece(self.capture_pieces[0][0], self.capture_pieces[0][1])
+                        if enemy_piece:
+                            self.pieces.remove(enemy_piece)
+                            print('Removed enemy piece at ', self.capture_pieces[0][0],
+                                  self.capture_pieces[0][1])
+                            print('----------------------')
+
+                    elif len(self.capture_moves) > 1 and len(self.capture_pieces) > 1 and (target_row, target_col) == self.capture_moves[1]:
+                        print('2 enemy pieces found at: ', self.capture_pieces[0], self.capture_pieces[1])
+                        print('----------------------')
+
+                        enemy_piece = self.find_piece(self.capture_pieces[1][0], self.capture_pieces[1][1])
+                        if enemy_piece:
+                            self.pieces.remove(enemy_piece)
+                            print('Removed enemy piece at ', self.capture_pieces[1][0],
+                                  self.capture_pieces[1][1])
+                    else:
+                        # Handle unexpected target_row/target_col
+                        print("Error: Target square does not match any capture moves.")
+
+                pygame.time.wait(500)
 
                 # Increase score, end turn
                 self.player_score += 1
 
-                print(f'Player captured piece at {self.capture_piece}. \n'
-                      f'Player score is now: {self.player_score}')
-
                 self.player_turn = False
+            else:
+                print('Else activated')
+                # print('Not a regular or a capture move!')
+                # print('Regular moves: ', self.regular_moves)
+                # print('Pieces to capture ', self.capture_pieces)
 
         self.regular_moves = []
         self.valid_moves = []

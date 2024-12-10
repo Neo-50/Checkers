@@ -47,7 +47,6 @@ class Board:
         self.valid_moves = []
         self.capture_moves = []
         self.capture_pieces = []
-        self.capture_piece = None
 
     def update(self):
         if not self.player_turn:
@@ -213,6 +212,30 @@ class Board:
 
                 # Remove enemy piece
                 if self.capture_moves and self.capture_pieces:  # Ensure lists are not empty
+
+                    # Iterate over all possible captures
+                    captured = False
+                    for i, move in enumerate(self.capture_moves):
+                        if (target_row, target_col) == move:
+                            enemy_piece = self.find_piece(self.capture_pieces[i][0], self.capture_pieces[i][1])
+                            if enemy_piece:
+                                print(f'Enemy piece found at: {self.capture_pieces[i]}')
+                                self.pieces.remove(enemy_piece)
+                                print(
+                                    f'Removed enemy piece at {self.capture_pieces[i][0]}, {self.capture_pieces[i][1]}')
+                                captured = True
+                                break
+
+                    if not captured:
+                        # Handle unexpected target_row/target_col
+                        print("Error: Target square does not match any capture moves.")
+
+                else:
+                    print('Capture moves or capture pieces are empty')
+
+                '''
+                if self.capture_moves and self.capture_pieces:  # Ensure lists are not empty
+
                     if (target_row, target_col) == self.capture_moves[0]:
                         print('1 enemy piece found at: ', self.capture_pieces[0])
 
@@ -223,23 +246,28 @@ class Board:
                                   self.capture_pieces[0][1])
                             print('----------------------')
 
-                    elif len(self.capture_moves) > 1 and len(self.capture_pieces) > 1 and (target_row, target_col) == self.capture_moves[1]:
+                    elif len(self.capture_moves) > 1 and \
+                            len(self.capture_pieces) > 1 and \
+                            (target_row, target_col) == self.capture_moves[1]:
                         print('2 enemy pieces found at: ', self.capture_pieces[0], self.capture_pieces[1])
                         print('----------------------')
 
                         enemy_piece = self.find_piece(self.capture_pieces[1][0], self.capture_pieces[1][1])
                         if enemy_piece:
                             self.pieces.remove(enemy_piece)
-                            print('Removed enemy piece at ', self.capture_pieces[1][0],
+                            print('Removed 2nd enemy piece at ', self.capture_pieces[1][0],
                                   self.capture_pieces[1][1])
+
                     else:
                         # Handle unexpected target_row/target_col
                         print("Error: Target square does not match any capture moves.")
+                '''
 
                 pygame.time.wait(500)
 
                 # Increase score, end turn
                 self.player_score += 1
+                print('Player score is now', self.player_score)
 
                 self.player_turn = False
             else:
@@ -251,8 +279,9 @@ class Board:
         self.regular_moves = []
         self.valid_moves = []
         self.capture_moves = []
-        self.capture_piece = []
+        self.capture_pieces = []
         self.selected_piece = None
+        pygame.time.wait(500)
 
     def ai_move(self):
         for row in range(8):
@@ -305,7 +334,6 @@ class Board:
             ai_piece = self.find_piece(start[0], start[1])
             ai_piece.row = end[0]
             ai_piece.col = end[1]
-            print(f'AI moved from {start} to {end}')
         else:
             print("No valid moves for AI!")
 

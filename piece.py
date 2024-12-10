@@ -3,11 +3,12 @@ from constants import *
 
 
 class Piece:
-    def __init__(self, window, row, col, is_player):
+    def __init__(self, window, row, col, is_player, hidden):
         self.window = window
         self.row = row
         self.col = col
         self.is_player = is_player
+        self.hidden = hidden
         self.is_king = False
     
     def get_color(self):

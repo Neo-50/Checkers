@@ -15,9 +15,9 @@ class Board:
             [
                 'black' if (row < 3 and (row + col) % 2 == 0) else
                 'red' if (row > 4 and (row + col) % 2 == 0) else
-                None for col in range(8)
+                None for col in range(10)
             ]
-            for row in range(8)
+            for row in range(10)
         ]
         self.width, self.height = 800, 800
         self.window = pygame.display.set_mode((self.width, self.height))

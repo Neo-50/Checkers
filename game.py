@@ -21,7 +21,7 @@ class Game:
     def init_pygame(self):
         pygame.init()
         pygame.display.set_caption("Checkers")
-        self.window = pygame.display.set_mode((BOARD_WIDTH, BOARD_HEIGHT))
+        self.window = pygame.display.set_mode((BOARD_WIDTH, BOARD_HEIGHT + 50))
 
     def start(self):
         while self.running:

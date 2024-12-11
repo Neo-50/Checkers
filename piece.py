@@ -14,16 +14,16 @@ class Piece:
     def get_color(self):
         if self.is_player:
             if self.is_king:
-                return COLORS['white']
+                return COLORS['player_king']
             else:
                 return COLORS['red']
         else:
             if self.is_king:
-                return COLORS['blue']
+                return COLORS['ai_king']
             else:
                 return COLORS['black']
 
     def draw(self):
         center_x = self.col * CELL_WIDTH + CELL_WIDTH // 2
-        center_y = self.row * CELL_HEIGHT + CELL_HEIGHT // 2
+        center_y = self.row * CELL_HEIGHT + (CELL_HEIGHT // 2) + 50
         pygame.draw.circle(self.window, self.get_color(), (center_x, center_y), PIECE_RADIUS)

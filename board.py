@@ -43,8 +43,9 @@ class Board:
 
         self.possible_moves = []
         self.regular_moves = []
-        self.valid_moves = []
         self.capture_moves = []
+        self.potential_double_capture_moves = []
+        self.double_capture_moves = []
         self.capture_pieces = []
 
         self.delay_start_time = None
@@ -91,6 +92,7 @@ class Board:
     def draw(self):
         self.clear()
         self.draw_grid()
+        self.draw_scoreboard()
         # Draw all pieces except the animating one
         for piece in self.pieces:
             if piece != self.animating_piece and not piece.hidden:
@@ -107,7 +109,7 @@ class Board:
             current_x = start_x + (end_x - start_x) * self.animation_progress
             current_y = start_y + (end_y - start_y) * self.animation_progress
 
-            color = COLORS['blue'] if self.animating_piece.is_king else COLORS['black']
+            color = COLORS['ai_king'] if self.animating_piece.is_king else COLORS['black']
             pygame.draw.circle(self.window, color, (int(current_x), int(current_y)), PIECE_RADIUS)
         self.draw_dragging_piece()
 
@@ -119,6 +121,10 @@ class Board:
         dark_color = (181, 136, 99)  # Darker brown
         border_color = (0, 255, 0)  # Green border for valid moves
         capture_color = (255, 0, 0)
+        margin_color = (150, 180, 220)
+
+        margin_rect = pygame.Rect(0, 0, BOARD_WIDTH, 50)
+        pygame.draw.rect(self.window, margin_color, margin_rect)
 
         for row in range(8):
             for col in range(8):
@@ -136,10 +142,20 @@ class Board:
                 if (row, col) in self.capture_moves:
                     pygame.draw.rect(self.window, capture_color, rect, 3)
 
-    # def draw_pieces(self):
-    #     for piece in self.pieces:
-    #         if not piece.hidden:
-    #             piece.draw()
+    def draw_scoreboard(self):
+        font = pygame.font.SysFont('Arial', 20)
+        text_color = (0, 0, 0)  # Black color for the text
+
+        score_text = font.render(f'Player: {self.player_score}    |    AI: {self.ai_score}', True, text_color)
+        title_text = font.render('Checkers', True, text_color)
+
+        score_text_width = score_text.get_width()
+
+        score_text_x = self.window.get_width() - score_text_width - 10
+        score_text_y = 10
+
+        self.window.blit(score_text, (score_text_x, score_text_y))
+        self.window.blit(title_text, (10, score_text_y))
 
     def find_piece(self, target_row, target_col):
         for piece in self.pieces:
@@ -152,7 +168,6 @@ class Board:
         row = (mouse_y - 50) // CELL_HEIGHT
         col = mouse_x // CELL_WIDTH
         radius = (CELL_WIDTH // 2) - PADDING
-        print('Row: ', row, 'Col: ', col)
         for piece in self.pieces:
             piece_x = piece.col * CELL_WIDTH + CELL_WIDTH // 2
             piece_y = piece.row * CELL_HEIGHT + CELL_HEIGHT // 2 + 50
@@ -186,7 +201,6 @@ class Board:
                 target_square = self.find_piece(target_row, target_col)
                 if not target_square:  # Check if empty
                     self.regular_moves.append((target_row, target_col))  # Append as tuple
-                    self.valid_moves.append((target_row, target_col))
 
                 else:
                     # Check if target square contains an opponent's piece
@@ -198,21 +212,26 @@ class Board:
 
                         # Ensure landing square is within bounds and empty
                         if (
-                                0 <= landing_row < 8
-                                and 0 <= landing_col < 8
-                                and self.find_piece(landing_row, landing_col) is None
+                            0 <= landing_row < 8
+                            and 0 <= landing_col < 8
+                            and self.find_piece(landing_row, landing_col) is None
                         ):
-                            self.valid_moves.append((landing_row, landing_col))  # Add to vaild moves
                             self.capture_moves.append((landing_row, landing_col))  # Add to capture moves
                             self.capture_pieces.append((target_row, target_col))  # Save opponent's piece location
-                            print('Added to capture_pieces list: ', self.capture_pieces)
+
+                            if self.capture_moves:
+                                self.potential_double_capture_moves.extend([
+                                    (self.capture_moves[0][0] - 1, self.capture_moves[0][1] - 1),
+                                    (self.capture_moves[0][0] - 1, self.capture_moves[0][1] + 1)
+                                ])
+                                print('Potential double capture moves: ', self.potential_double_capture_moves)
 
     def draw_dragging_piece(self):
         if self.selected_piece:
             piece = self.find_piece(self.selected_piece[0], self.selected_piece[1])
             if piece:
                 if piece.is_king:
-                    color = COLORS['white']
+                    color = COLORS['player_king']
                 else:
                     color = COLORS['red']
                 piece.hidden = True
@@ -270,10 +289,7 @@ class Board:
                         if (target_row, target_col) == move:
                             enemy_piece = self.find_piece(self.capture_pieces[i][0], self.capture_pieces[i][1])
                             if enemy_piece:
-                                print(f'Enemy piece found at: {self.capture_pieces[i]}')
                                 self.pieces.remove(enemy_piece)
-                                print(
-                                    f'Removed enemy piece at {self.capture_pieces[i][0]}, {self.capture_pieces[i][1]}')
                                 captured = True
                                 break
 
@@ -282,18 +298,16 @@ class Board:
                         print("Error: Target square does not match any capture moves.")
 
                 else:
-                    print('Capture moves or capture pieces are empty')
+                    print('Error: Capture moves or capture pieces are empty')
 
                 # Increase score, end turn
                 self.player_score += 1
-                print('Player score is now', self.player_score)
 
-                pygame.time.wait(100)
+                pygame.time.wait(50)
 
                 self.player_turn = False
 
         self.regular_moves = []
-        self.valid_moves = []
         self.capture_moves = []
         self.capture_pieces = []
         self.selected_piece = None
@@ -355,15 +369,13 @@ class Board:
                 self.pending_capture = capture_piece
                 self.delay_start_time = pygame.time.get_ticks()
                 self.waiting_to_remove = True
-            print(f"AI captures piece at {captured} by moving from {start} to {end}")
 
             # King if end of board
             if end[0] == 7:
                 ai_piece.is_king = True
-                print('AI piece is now a King!')
 
             self.ai_score += 1
-            print('AI score is now: ', self.ai_score)
+
         elif self.regular_moves:
             # Execute a regular move
             start, end = choice(self.regular_moves)
@@ -381,7 +393,6 @@ class Board:
             # King if end of board
             if end[0] == 7:
                 ai_piece.is_king = True
-                print('AI piece is now a King!')
 
         else:
             print("No valid moves for AI!")

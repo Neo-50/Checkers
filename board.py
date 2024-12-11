@@ -34,7 +34,6 @@ class Board:
         ]
 
         self.selected_piece = None
-        self.selected_piece_color = None
         self.player_turn = True
         self.drag_offset_x = 0
         self.drag_offset_y = 0
@@ -79,7 +78,7 @@ class Board:
                         self.waiting_to_remove = False
         if self.waiting_to_remove:
             current_time = pygame.time.get_ticks()
-            if current_time - self.delay_start_time >= 600:  # 5-second delay
+            if current_time - self.delay_start_time >= 600:
                 if self.pending_capture:
                     self.pieces.remove(self.pending_capture)
                     print(f"Piece removed: {self.pending_capture.row}, {self.pending_capture.col}")
@@ -94,7 +93,7 @@ class Board:
         self.draw_grid()
         # Draw all pieces except the animating one
         for piece in self.pieces:
-            if piece != self.animating_piece:
+            if piece != self.animating_piece and not piece.hidden:
                 piece.draw()
 
         # Draw the animating piece
@@ -108,7 +107,8 @@ class Board:
             current_x = start_x + (end_x - start_x) * self.animation_progress
             current_y = start_y + (end_y - start_y) * self.animation_progress
 
-            pygame.draw.circle(self.window, COLORS['black'], (int(current_x), int(current_y)), PIECE_RADIUS)
+            color = COLORS['blue'] if self.animating_piece.is_king else COLORS['black']
+            pygame.draw.circle(self.window, color, (int(current_x), int(current_y)), PIECE_RADIUS)
         self.draw_dragging_piece()
 
     def clear(self):
@@ -136,10 +136,10 @@ class Board:
                 if (row, col) in self.capture_moves:
                     pygame.draw.rect(self.window, capture_color, rect, 3)
 
-    def draw_pieces(self):
-        for piece in self.pieces:
-            if not piece.hidden:
-                piece.draw()
+    # def draw_pieces(self):
+    #     for piece in self.pieces:
+    #         if not piece.hidden:
+    #             piece.draw()
 
     def find_piece(self, target_row, target_col):
         for piece in self.pieces:
@@ -152,6 +152,7 @@ class Board:
         row = mouse_y // CELL_HEIGHT
         col = mouse_x // CELL_WIDTH
         radius = (CELL_WIDTH // 2) - PADDING
+        print('Row: ', row, 'Col: ', col)
         for piece in self.pieces:
             piece_x = piece.col * CELL_WIDTH + CELL_WIDTH // 2
             piece_y = piece.row * CELL_HEIGHT + CELL_HEIGHT // 2
@@ -290,11 +291,6 @@ class Board:
                 pygame.time.wait(100)
 
                 self.player_turn = False
-            else:
-                print('Else activated')
-                # print('Not a regular or a capture move!')
-                # print('Regular moves: ', self.regular_moves)
-                # print('Pieces to capture ', self.capture_pieces)
 
         self.regular_moves = []
         self.valid_moves = []
@@ -312,6 +308,13 @@ class Board:
                             (row + 1, col - 1),  # Forward-left
                             (row + 1, col + 1),  # Forward-right
                         ]
+                        if piece.is_king is True:
+                            potential_moves = [
+                                (row + 1, col - 1),  # Forward-left
+                                (row + 1, col + 1),  # Forward-right
+                                (row - 1, col - 1),  # Backward-left
+                                (row - 1, col + 1),  # Backward-right
+                            ]
                         for target_row, target_col in potential_moves:
                             if 0 <= target_row < 8 and 0 <= target_col < 8:  # Within boundaries
 
@@ -346,9 +349,6 @@ class Board:
             self.animation_end = end
             self.animation_progress = 0  # Reset progress
 
-            # ai_piece.row = end[0]
-            # ai_piece.col = end[1]
-
             capture_piece = self.find_piece(captured[0], captured[1])
 
             if capture_piece:
@@ -356,6 +356,11 @@ class Board:
                 self.delay_start_time = pygame.time.get_ticks()
                 self.waiting_to_remove = True
             print(f"AI captures piece at {captured} by moving from {start} to {end}")
+
+            # King if end of board
+            if end[0] == 7:
+                ai_piece.is_king = True
+                print('AI piece is now a King!')
 
             self.ai_score += 1
             print('AI score is now: ', self.ai_score)
@@ -373,7 +378,10 @@ class Board:
             self.animation_end = end
             self.animation_progress = 0  # Reset progress
 
-            # ai_piece.row = end[0]
-            # ai_piece.col = end[1]
+            # King if end of board
+            if end[0] == 7:
+                ai_piece.is_king = True
+                print('AI piece is now a King!')
+
         else:
             print("No valid moves for AI!")

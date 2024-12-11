@@ -99,9 +99,9 @@ class Board:
         # Draw the animating piece
         if self.animating_piece:
             start_x = self.animation_start[1] * CELL_WIDTH + CELL_WIDTH // 2
-            start_y = self.animation_start[0] * CELL_HEIGHT + CELL_HEIGHT // 2
+            start_y = (self.animation_start[0] * CELL_HEIGHT + CELL_HEIGHT // 2) + 50
             end_x = self.animation_end[1] * CELL_WIDTH + CELL_WIDTH // 2
-            end_y = self.animation_end[0] * CELL_HEIGHT + CELL_HEIGHT // 2
+            end_y = (self.animation_end[0] * CELL_HEIGHT + CELL_HEIGHT // 2) + 50
 
             # Interpolate position based on animation progress
             current_x = start_x + (end_x - start_x) * self.animation_progress
@@ -122,7 +122,7 @@ class Board:
 
         for row in range(8):
             for col in range(8):
-                rect = pygame.Rect(col * CELL_WIDTH, row * CELL_HEIGHT, CELL_WIDTH, CELL_HEIGHT)
+                rect = pygame.Rect(col * CELL_WIDTH, (row * CELL_HEIGHT) + 50, CELL_WIDTH, CELL_HEIGHT)
                 if (row + col) % 2 == 0:
                     color = light_color
                 else:
@@ -149,13 +149,13 @@ class Board:
 
     def handle_mousedown(self, event):
         mouse_x, mouse_y = event.pos
-        row = mouse_y // CELL_HEIGHT
+        row = (mouse_y - 50) // CELL_HEIGHT
         col = mouse_x // CELL_WIDTH
         radius = (CELL_WIDTH // 2) - PADDING
         print('Row: ', row, 'Col: ', col)
         for piece in self.pieces:
             piece_x = piece.col * CELL_WIDTH + CELL_WIDTH // 2
-            piece_y = piece.row * CELL_HEIGHT + CELL_HEIGHT // 2
+            piece_y = piece.row * CELL_HEIGHT + CELL_HEIGHT // 2 + 50
             if (piece.row == row and piece.col == col) and piece.is_player:
                 if (mouse_x - piece_x) ** 2 + (mouse_y - piece_y) ** 2 <= radius ** 2:
                     # Set dragging-related attributes
@@ -233,7 +233,7 @@ class Board:
             mouse_x, mouse_y = event.pos
 
             target_col = mouse_x // CELL_WIDTH
-            target_row = mouse_y // CELL_HEIGHT
+            target_row = (mouse_y - 50) // CELL_HEIGHT
 
             if (target_row, target_col) in self.regular_moves:
                 # Update coords for piece object

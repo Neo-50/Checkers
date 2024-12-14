@@ -29,11 +29,7 @@ class Board:
 
         self.selected_piece = None
         self.player_turn = True
-        self.drag_offset_x = 0
-        self.drag_offset_y = 0
-
-        self.player_score = 0
-        self.ai_score = 0
+        self.drag_offset = Vector(0, 0)
 
         self.regular_moves = []
         self.capture_moves = []
@@ -128,27 +124,26 @@ class Board:
     def draw_selected_piece(self):
         if not self.selected_piece:
             return
-        self.selected_piece.hidden = True
+        self.selected_piece.hide()
         mouse_x, mouse_y = pygame.mouse.get_pos()
-        new_x = mouse_x - self.drag_offset_x
-        new_y = mouse_y - self.drag_offset_y
-        pygame.draw.circle(self.window, self.selected_piece.get_color(), (new_x, new_y), PIECE_RADIUS)
+        mouse_position = Vector(mouse_x, mouse_y)
+        piece_position = mouse_position - self.drag_offset
+        pygame.draw.circle(self.window, self.selected_piece.get_color(), piece_position.tuple(), PIECE_RADIUS)
 
     def handle_piece_mousedown(self, piece, event):
         if not self.player_turn:
             return
         self.selected_piece = piece
-        mouse_x, mouse_y = event.pos
-        piece_x, piece_y = piece.get_absolute_position()
-        self.drag_offset_x = mouse_x - piece_x
-        self.drag_offset_y = mouse_y - piece_y
+        mouse_position = Vector(event.pos[0], event.pos[1])
+        piece_position = piece.get_absolute_position()
+        self.drag_offset = mouse_position - piece_position
         self.do_player_move(piece)
 
     def handle_grid_mouseup(self, cell):
         if not self.player_turn:
             return
         if self.selected_piece:
-            self.selected_piece.hidden = False  # Make piece visible again
+            self.selected_piece.show()
 
             # INITIATE REGULAR MOVE
             if (cell.row, cell.col) in self.regular_moves:
@@ -204,9 +199,8 @@ class Board:
         self.selected_piece = None
 
     def ai_move(self):
-        print('ai_move')
-        for row in range(8):
-            for col in range(8):
+        for row in range(NUM_ROWS):
+            for col in range(NUM_COLS):
                 piece = self.find_piece(row, col)
                 if piece and not piece.is_player:
                     potential_moves = [

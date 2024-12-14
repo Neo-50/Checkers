@@ -1,6 +1,7 @@
 import pygame
 
 from constants import *
+from vector import Vector
 
 class Piece:
     def __init__(self, window, row, col, is_player = True, on_mousedown = None):
@@ -14,28 +15,31 @@ class Piece:
 
     def draw(self):
         if (not self.hidden):
-            center_x = self.col * CELL_WIDTH + CELL_WIDTH // 2
-            center_y = self.row * CELL_HEIGHT + (CELL_HEIGHT // 2) + SCOREBOARD_HEIGHT
-            pygame.draw.circle(self.window, self.get_color(), (center_x, center_y), PIECE_RADIUS)
+            pygame.draw.circle(self.window, self.get_color(), self.get_absolute_position().tuple(), PIECE_RADIUS)
     
+    def hide(self):
+        self.hidden = True
+
+    def show(self):
+        self.hidden = False
+
     def set_position(self, row, col):
         self.row = row
         self.col = col
 
     def handle_event(self, event):
         if (event.type == pygame.MOUSEBUTTONDOWN and self.on_mousedown):
-            x, y = event.pos
-            if (self.is_player and self.contains_point(x, y)):
+            if (self.is_player and self.contains_point(Vector(event.pos[0], event.pos[1]))):
                 self.on_mousedown(self, event)
 
-    def contains_point(self, x, y):
-        piece_x, piece_y = self.get_absolute_position()
-        return (x - piece_x) ** 2 + (y - piece_y) ** 2 <= PIECE_RADIUS ** 2
+    def contains_point(self, point):
+        position = self.get_absolute_position()
+        return (point.x - position.x) ** 2 + (point.y - position.y) ** 2 <= PIECE_RADIUS ** 2
 
     def get_absolute_position(self):
         x = self.col * CELL_WIDTH + CELL_WIDTH // 2
         y = self.row * CELL_HEIGHT + CELL_HEIGHT // 2 + SCOREBOARD_HEIGHT
-        return x, y
+        return Vector(x, y)
 
     def get_color(self):
         if self.is_player:

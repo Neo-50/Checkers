@@ -41,6 +41,9 @@ class Piece:
         y = self.row * CELL_HEIGHT + CELL_HEIGHT // 2 + SCOREBOARD_HEIGHT
         return Vector(x, y)
 
+    def promote(self):
+        self.is_king = True
+
     def get_color(self):
         if self.is_player:
             if self.is_king:

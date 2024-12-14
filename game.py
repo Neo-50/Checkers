@@ -11,8 +11,8 @@ class Game:
 
     def init_pygame(self):
         pygame.init()
-        pygame.display.set_caption("Checkers")
-        self.window = pygame.display.set_mode((BOARD_WIDTH, BOARD_HEIGHT + 50))
+        pygame.display.set_caption('Checkers')
+        self.window = pygame.display.set_mode((BOARD_WIDTH, BOARD_HEIGHT + SCOREBOARD_HEIGHT))
 
     def start(self):
         while self.running:
@@ -20,7 +20,7 @@ class Game:
             self.board.update()
             self.board.draw()
             pygame.display.flip()
-            pygame.time.Clock().tick(60)
+            pygame.time.Clock().tick(FRAMERATE)
         pygame.quit()
 
     def handle_events(self):

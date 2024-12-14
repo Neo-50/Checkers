@@ -75,48 +75,15 @@ class Board:
                 return piece
         return None
 
-    def find_possible_player_moves(self, piece):
+    def get_possible_player_moves(self, piece):
+        moves = [
+            (piece.row - 1, piece.col - 1),  # Top left
+            (piece.row - 1, piece.col + 1),  # Top right
+        ]
         if piece.is_king:
-            return [
-                (piece.row - 1, piece.col - 1),  # Top left
-                (piece.row - 1, piece.col + 1),  # Top right
-                (piece.row + 1, piece.col - 1),  # Bottom left
-                (piece.row + 1, piece.col + 1)   # Bottom right
-            ]
-        else:
-            return [
-                (piece.row - 1, piece.col - 1),  # Top left
-                (piece.row - 1, piece.col + 1)   # Top right
-            ]
-
-    def do_player_move(self, piece):
-        self.regular_moves.clear()
-        self.capture_moves.clear()
-        self.capture_pieces.clear()
-        
-        # Check if within bounds and empty
-        for i, move in enumerate(self.find_possible_player_moves(piece)):
-            target_row, target_col = move
-            if self.cell_is_in_board(target_row, target_col):
-                target_piece = self.find_piece(target_row, target_col)  # Check for opponent piece
-                if not target_piece:  # Check if empty
-                    self.regular_moves.append((target_row, target_col))  # Append as tuple
-                else:
-                    enemy_piece = self.find_piece(target_row, target_col)
-                    if not enemy_piece.is_player:  # Filter player pieces
-                        # SAVE ENEMY PIECE LOCATION
-                        self.capture_pieces.append((target_row, target_col, i))
-
-                        # Calculate the landing square for a capture
-                        landing_row = target_row - (piece.row - target_row)  # Mirror target_row
-                        landing_col = target_col - (piece.col - target_col)  # Mirror target_col
-
-                        # Ensure landing square is within bounds and empty
-                        if (
-                            self.cell_is_in_board(landing_row, landing_col) and
-                            self.find_piece(landing_row, landing_col) is None
-                        ):
-                            self.capture_moves.append((landing_row, landing_col))  # Add to capture moves
+            moves.append((piece.row + 1, piece.col - 1))   # Bottom left
+            moves.append((piece.row + 1, piece.col + 1))   # Bottom right
+        return moves
 
     def cell_is_in_board(self, row, col):
         return 0 <= row < 8 and 0 <= col < 8
@@ -137,7 +104,7 @@ class Board:
         mouse_position = Vector(event.pos[0], event.pos[1])
         piece_position = piece.get_absolute_position()
         self.drag_offset = mouse_position - piece_position
-        self.do_player_move(piece)
+        self.player_move(piece)
 
     def handle_grid_mouseup(self, cell):
         if not self.player_turn:
@@ -156,7 +123,7 @@ class Board:
 
                 # King if end of board
                 if cell.row == 0:
-                    self.selected_piece.is_king = True
+                    self.selected_piece.promote()
 
                 self.player_turn = False
 
@@ -169,7 +136,7 @@ class Board:
 
                 # King if end of board
                 if cell.row == 0:
-                    self.selected_piece.is_king = True
+                    self.selected_piece.promote()
 
                 # Remove enemy piece
                 if self.capture_moves and self.capture_pieces:  # Ensure lists are not empty
@@ -197,6 +164,35 @@ class Board:
         self.capture_moves.clear()
         self.capture_pieces.clear()
         self.selected_piece = None
+
+    def player_move(self, piece):
+        self.regular_moves.clear()
+        self.capture_moves.clear()
+        self.capture_pieces.clear()
+        
+        # Check if within bounds and empty
+        for i, move in enumerate(self.get_possible_player_moves(piece)):
+            target_row, target_col = move
+            if self.cell_is_in_board(target_row, target_col):
+                target_piece = self.find_piece(target_row, target_col)  # Check for opponent piece
+                if not target_piece:  # Check if empty
+                    self.regular_moves.append((target_row, target_col))  # Append as tuple
+                else:
+                    enemy_piece = self.find_piece(target_row, target_col)
+                    if not enemy_piece.is_player:  # Filter player pieces
+                        # SAVE ENEMY PIECE LOCATION
+                        self.capture_pieces.append((target_row, target_col, i))
+
+                        # Calculate the landing square for a capture
+                        landing_row = target_row - (piece.row - target_row)  # Mirror target_row
+                        landing_col = target_col - (piece.col - target_col)  # Mirror target_col
+
+                        # Ensure landing square is within bounds and empty
+                        if (
+                            self.cell_is_in_board(landing_row, landing_col) and
+                            self.find_piece(landing_row, landing_col) is None
+                        ):
+                            self.capture_moves.append((landing_row, landing_col))  # Add to capture moves
 
     def ai_move(self):
         for row in range(NUM_ROWS):
@@ -246,7 +242,7 @@ class Board:
 
             # King if end of board
             if end[0] == 7:
-                ai_piece.is_king = True
+                ai_piece.promote()
 
             self.scoreboard.increment_computer_score()
 
@@ -258,8 +254,8 @@ class Board:
             ai_piece.set_position(end[0], end[1])
 
             # King if end of board
-            if end[0] == 7:
-                ai_piece.is_king = True
+            if end[0] == NUM_COLS - 1:
+                ai_piece.promote()
 
         else:
             print("No valid moves for AI!")

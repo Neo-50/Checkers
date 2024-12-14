@@ -10,7 +10,16 @@ class Piece:
         self.is_player = is_player
         self.hidden = hidden
         self.is_king = False
-    
+        self.possible_moves = []
+        self.regular_moves = []
+        self.capture_moves = []
+        self.capture_pieces = []
+        self.potential_double_capture_moves = []
+        self.left_double_capture_move = []
+        self.right_double_capture_move = []
+        self.double_capture_targets = []
+        self.double_capture_pieces = []
+
     def get_color(self):
         if self.is_player:
             if self.is_king:

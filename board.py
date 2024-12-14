@@ -284,7 +284,7 @@ class Board:
                     if 8 > landing_row >= 0 and 8 > landing_col >= 0:  # Check if in bounds
                         landing_check = self.find_piece(landing_row, landing_col)  # Check if empty
                         if not landing_check:
-                            piece.double_capture_moves.append((landing_row, landing_col))
+                            piece.left_double_capture_move.append((landing_row, landing_col))
                             print(f'Left double capture move found at: ({landing_row}, {landing_col})')
                             print('---------------')
 
@@ -297,7 +297,7 @@ class Board:
                     if 8 > landing_row >= 0 and 8 > landing_col >= 0:  # Check if in bounds
                         landing_check = self.find_piece(landing_row, landing_col)  # Check if empty
                         if not landing_check:
-                            piece.double_capture_moves.append((landing_row, landing_col))
+                            piece.right_double_capture_move.append((landing_row, landing_col))
                             print(f'Right double capture move found at: ({landing_row}, {landing_col})')
 
                             piece.double_capture_pieces.append((piece.row, piece.col))

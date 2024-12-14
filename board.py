@@ -4,6 +4,19 @@ from random import choice
 from constants import *
 from piece import Piece
 
+PIECE_POSITIONS = {
+    'computer': [
+        (0,0), (0,2), (0,4), (0,6),
+        (1,1), (1,3), (1,5), (1,7),
+        (2,0), (2,2), (2,4), (2,6)
+    ],
+    'player': [
+        (5,1), (5,3), (5,5), (5,7),
+        (6,0), (6,2), (6,4), (6,6),
+        (7,1), (7,3), (7,5), (7,7)
+    ]
+}
+
 '''
 Responsibilies: 
     1. Draw the game grid and pieces on the screen (shapes, colors)
@@ -13,22 +26,7 @@ Responsibilies:
 class Board:
     def __init__(self, window):
         self.window = window
-        self.pieces = [
-            # Computer
-            Piece(self.window, 0, 0, False, False), Piece(self.window, 0, 2, False, False),
-            Piece(self.window, 0, 4, False, False), Piece(self.window, 0, 6, False, False),
-            Piece(self.window, 1, 1, False, False), Piece(self.window, 1, 3, False, False),
-            Piece(self.window, 1, 5, False, False), Piece(self.window, 1, 7, False, False),
-            Piece(self.window, 2, 0, False, False), Piece(self.window, 2, 2, False, False),
-            Piece(self.window, 2, 4, False, False), Piece(self.window, 2, 6, False, False),
-            # Player
-            Piece(self.window, 5, 7, True, False), Piece(self.window, 5, 5, True, False),
-            Piece(self.window, 5, 3, True, False), Piece(self.window, 5, 1, True, False),
-            Piece(self.window, 6, 6, True, False), Piece(self.window, 6, 4, True, False),
-            Piece(self.window, 6, 2, True, False), Piece(self.window, 6, 0, True, False),
-            Piece(self.window, 7, 7, True, False), Piece(self.window, 7, 5, True, False),
-            Piece(self.window, 7, 3, True, False), Piece(self.window, 7, 1, True, False)
-        ]
+        self.init_pieces()
 
         self.selected_piece = None
         self.player_turn = True
@@ -41,6 +39,27 @@ class Board:
         self.regular_moves = []
         self.capture_moves = []
         self.capture_pieces = []
+
+    def init_pieces(self):
+        self.pieces = []
+        for pos in PIECE_POSITIONS['player']:
+            self.pieces.append(self.make_piece(pos[0], pos[1], True))
+        for pos in PIECE_POSITIONS['computer']:
+            self.pieces.append(self.make_piece(pos[0], pos[1], False))
+
+    def make_piece(self, row, col, is_player):
+        return Piece(self.window, row, col, is_player, self.handle_piece_mousedown)
+
+    def handle_piece_mousedown(self, piece, event):
+        if not self.player_turn:
+            return
+        self.selected_piece = piece
+        mouse_x, mouse_y = event.pos
+        piece_x, piece_y = piece.get_absolute_position()
+        self.drag_offset_x = mouse_x - piece_x
+        self.drag_offset_y = mouse_y - piece_y
+        self.do_player_move(piece)
+
 
     def update(self):
         if (not self.player_turn):
@@ -57,17 +76,21 @@ class Board:
     def clear(self):
         self.window.fill((200, 200, 200))
 
+    def handle_event(self, event):
+        for piece in self.pieces:
+            piece.handle_event(event)
+
     def draw_pieces(self):
         for piece in self.pieces:
             piece.draw()
 
     def draw_grid(self):
-        margin_rect = pygame.Rect(0, 0, BOARD_WIDTH, 50)
+        margin_rect = pygame.Rect(0, 0, BOARD_WIDTH, SCOREBOARD_HEIGHT)
         pygame.draw.rect(self.window, COLORS['margin_color'], margin_rect)
 
         for row in range(8):
             for col in range(8):
-                rect = pygame.Rect(col * CELL_WIDTH, (row * CELL_HEIGHT) + 50, CELL_WIDTH, CELL_HEIGHT)
+                rect = pygame.Rect(col * CELL_WIDTH, (row * CELL_HEIGHT) + SCOREBOARD_HEIGHT, CELL_WIDTH, CELL_HEIGHT)
                 if (row + col) % 2 == 0:
                     color = COLORS['light_color']
                 else:
@@ -102,24 +125,6 @@ class Board:
             if piece.row == row and piece.col == col:
                 return piece
         return None
-
-    def handle_mousedown(self, event):
-        if not self.player_turn:
-            return
-        mouse_x, mouse_y = event.pos
-        row = (mouse_y - 50) // CELL_HEIGHT
-        col = mouse_x // CELL_WIDTH
-        radius = (CELL_WIDTH // 2) - PADDING
-        for piece in self.pieces:
-            piece_x = piece.col * CELL_WIDTH + CELL_WIDTH // 2
-            piece_y = piece.row * CELL_HEIGHT + CELL_HEIGHT // 2 + 50
-            if (piece.row == row and piece.col == col) and piece.is_player:
-                if (mouse_x - piece_x) ** 2 + (mouse_y - piece_y) ** 2 <= radius ** 2:
-                    # Set dragging-related attributes
-                    self.selected_piece = piece
-                    self.drag_offset_x = mouse_x - piece_x
-                    self.drag_offset_y = mouse_y - piece_y
-                    self.do_player_move(piece)
 
     def find_possible_player_moves(self, piece):
         if piece.is_king:
@@ -185,7 +190,7 @@ class Board:
             mouse_x, mouse_y = event.pos
 
             target_col = mouse_x // CELL_WIDTH
-            target_row = (mouse_y - 50) // CELL_HEIGHT
+            target_row = (mouse_y - SCOREBOARD_HEIGHT) // CELL_HEIGHT
 
             # INITIATE REGULAR MOVE
             if (target_row, target_col) in self.regular_moves:

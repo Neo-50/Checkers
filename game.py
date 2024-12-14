@@ -33,10 +33,7 @@ class Game:
 
     def handle_events(self):
         for event in pygame.event.get():
-            match event.type:
-                case pygame.QUIT:
-                    self.running = False
-                case pygame.MOUSEBUTTONDOWN:
-                    self.board.handle_mousedown(event)
-                case pygame.MOUSEBUTTONUP:
-                    self.board.handle_mouseup(event)
+            if event.type == pygame.QUIT:
+                self.running = False
+                return
+            self.board.handle_event(event)

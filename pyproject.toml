@@ -1,0 +1,8 @@
+[tool.poetry]
+package-mode = false
+version = "0.1.0"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11.5"
+pygame = "*"

@@ -15,8 +15,7 @@ class Piece:
         self.capture_moves = []
         self.capture_pieces = []
         self.potential_double_capture_moves = []
-        self.left_double_capture_move = []
-        self.right_double_capture_move = []
+        self.double_capture_moves = []
         self.double_capture_targets = []
         self.double_capture_pieces = []
 

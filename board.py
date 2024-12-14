@@ -284,7 +284,7 @@ class Board:
                     if 8 > landing_row >= 0 and 8 > landing_col >= 0:  # Check if in bounds
                         landing_check = self.find_piece(landing_row, landing_col)  # Check if empty
                         if not landing_check:
-                            piece.left_double_capture_move.append((landing_row, landing_col))
+                            piece.double_capture_moves.append((landing_row, landing_col))
                             print(f'Left double capture move found at: ({landing_row}, {landing_col})')
                             print('---------------')
 
@@ -297,7 +297,7 @@ class Board:
                     if 8 > landing_row >= 0 and 8 > landing_col >= 0:  # Check if in bounds
                         landing_check = self.find_piece(landing_row, landing_col)  # Check if empty
                         if not landing_check:
-                            piece.right_double_capture_move.append((landing_row, landing_col))
+                            piece.double_capture_moves.append((landing_row, landing_col))
                             print(f'Right double capture move found at: ({landing_row}, {landing_col})')
 
                             piece.double_capture_pieces.append((piece.row, piece.col))
@@ -364,14 +364,22 @@ class Board:
                 # Remove enemy piece
                 if piece.capture_moves and piece.capture_pieces:  # Ensure lists are not empty
                     captured = False
-                    for i, move in enumerate(piece.capture_moves):
-                        if (target_row, target_col) == move:
-                            enemy_piece = self.find_piece(piece.capture_pieces[i][0], piece.capture_pieces[i][1])
-                            if enemy_piece:
-                                self.pieces.remove(enemy_piece)
-                                print(f'Piece removed: ({enemy_piece.row}, {enemy_piece.col})')
-                                captured = True
-                                break
+
+                    for i, capture_piece in enumerate(piece.capture_pieces):
+                        if piece.col - 1 == capture_piece[1]:
+                            print('Capture piece left found!')
+                            remove_piece = self.find_piece(capture_piece[i], capture_piece[1])
+                            self.pieces.remove(remove_piece)
+                            break
+                        elif piece.col + 1 == capture_piece[1]:
+                            print('Capture piece right found!')
+                            remove_piece = self.find_piece(capture_piece[i], capture_piece[1])
+                            self.pieces.remove(remove_piece)
+                            break
+                        else:
+                            print('Unable to find capture piece!')
+                            break
+
                     if not captured:
                         # Handle unexpected target_row/target_col
                         print("Error: Target square does not match any capture moves.")

@@ -16,7 +16,6 @@ class Game:
         self.init_pygame()
         self.board = Board(self.window)
         self.running = True
-        self.window = None
 
     def init_pygame(self):
         pygame.init()
@@ -30,16 +29,14 @@ class Game:
             self.board.draw()
             pygame.display.flip()
             pygame.time.Clock().tick(60)
+        pygame.quit()
 
     def handle_events(self):
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.running = False
-            if self.board.player_turn:
-                if event.type == pygame.MOUSEBUTTONDOWN:
+            match event.type:
+                case pygame.QUIT:
+                    self.running = False
+                case pygame.MOUSEBUTTONDOWN:
                     self.board.handle_mousedown(event)
-                elif event.type == pygame.MOUSEMOTION:
-                    if self.board.selected_piece:
-                        self.board.draw_dragging_piece()
-                elif event.type == pygame.MOUSEBUTTONUP:
+                case pygame.MOUSEBUTTONUP:
                     self.board.handle_mouseup(event)

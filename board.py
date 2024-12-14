@@ -3,6 +3,9 @@ from random import choice
 
 from constants import *
 from piece import Piece
+from vector import Vector
+from board_grid import BoardGrid
+from scoreboard import Scoreboard
 
 PIECE_POSITIONS = {
     'computer': [
@@ -17,15 +20,11 @@ PIECE_POSITIONS = {
     ]
 }
 
-'''
-Responsibilies: 
-    1. Draw the game grid and pieces on the screen (shapes, colors)
-    2. Hold the board data (array)
-    3. Make moves
-'''
 class Board:
     def __init__(self, window):
         self.window = window
+        self.scoreboard = Scoreboard(self.window)
+        self.grid = BoardGrid(self.window, Vector(0, SCOREBOARD_HEIGHT), self.handle_grid_mouseup)
         self.init_pieces()
 
         self.selected_piece = None
@@ -50,17 +49,6 @@ class Board:
     def make_piece(self, row, col, is_player):
         return Piece(self.window, row, col, is_player, self.handle_piece_mousedown)
 
-    def handle_piece_mousedown(self, piece, event):
-        if not self.player_turn:
-            return
-        self.selected_piece = piece
-        mouse_x, mouse_y = event.pos
-        piece_x, piece_y = piece.get_absolute_position()
-        self.drag_offset_x = mouse_x - piece_x
-        self.drag_offset_y = mouse_y - piece_y
-        self.do_player_move(piece)
-
-
     def update(self):
         if (not self.player_turn):
             self.ai_move()
@@ -68,8 +56,8 @@ class Board:
 
     def draw(self):
         self.clear()
-        self.draw_grid()
-        self.draw_scoreboard()
+        self.scoreboard.draw()
+        self.grid.draw()
         self.draw_pieces()
         self.draw_selected_piece()
 
@@ -77,48 +65,13 @@ class Board:
         self.window.fill((200, 200, 200))
 
     def handle_event(self, event):
+        self.grid.handle_event(event)
         for piece in self.pieces:
             piece.handle_event(event)
 
     def draw_pieces(self):
         for piece in self.pieces:
             piece.draw()
-
-    def draw_grid(self):
-        margin_rect = pygame.Rect(0, 0, BOARD_WIDTH, SCOREBOARD_HEIGHT)
-        pygame.draw.rect(self.window, COLORS['margin_color'], margin_rect)
-
-        for row in range(8):
-            for col in range(8):
-                rect = pygame.Rect(col * CELL_WIDTH, (row * CELL_HEIGHT) + SCOREBOARD_HEIGHT, CELL_WIDTH, CELL_HEIGHT)
-                if (row + col) % 2 == 0:
-                    color = COLORS['light_color']
-                else:
-                    color = COLORS['dark_color']
-                pygame.draw.rect(self.window, color, rect)
-
-                # Add a border for valid moves
-                if (row, col) in self.regular_moves:
-                    pygame.draw.rect(self.window, COLORS['border_color'], rect, 3)
-
-                if (row, col) in self.capture_moves:
-                    pygame.draw.rect(self.window, COLORS['capture_color'], rect, 3)
-
-
-    def draw_scoreboard(self):
-        font = pygame.font.SysFont('Arial', 20)
-        text_color = (0, 0, 0)  # Black color for the text
-
-        score_text = font.render(f'Player: {self.player_score}    |    AI: {self.ai_score}', True, text_color)
-        title_text = font.render('Checkers', True, text_color)
-
-        score_text_width = score_text.get_width()
-
-        score_text_x = self.window.get_width() - score_text_width - 10
-        score_text_y = 10
-
-        self.window.blit(score_text, (score_text_x, score_text_y))
-        self.window.blit(title_text, (10, score_text_y))
 
     def find_piece(self, row, col):
         for piece in self.pieces:
@@ -132,12 +85,12 @@ class Board:
                 (piece.row - 1, piece.col - 1),  # Top left
                 (piece.row - 1, piece.col + 1),  # Top right
                 (piece.row + 1, piece.col - 1),  # Bottom left
-                (piece.row + 1, piece.col + 1),  # Bottom right
+                (piece.row + 1, piece.col + 1)   # Bottom right
             ]
         else:
             return [
                 (piece.row - 1, piece.col - 1),  # Top left
-                (piece.row - 1, piece.col + 1),  # Top right
+                (piece.row - 1, piece.col + 1)   # Top right
             ]
 
     def do_player_move(self, piece):
@@ -181,48 +134,53 @@ class Board:
         new_y = mouse_y - self.drag_offset_y
         pygame.draw.circle(self.window, self.selected_piece.get_color(), (new_x, new_y), PIECE_RADIUS)
 
-    def handle_mouseup(self, event):
+    def handle_piece_mousedown(self, piece, event):
+        if not self.player_turn:
+            return
+        self.selected_piece = piece
+        mouse_x, mouse_y = event.pos
+        piece_x, piece_y = piece.get_absolute_position()
+        self.drag_offset_x = mouse_x - piece_x
+        self.drag_offset_y = mouse_y - piece_y
+        self.do_player_move(piece)
+
+    def handle_grid_mouseup(self, cell):
         if not self.player_turn:
             return
         if self.selected_piece:
             self.selected_piece.hidden = False  # Make piece visible again
 
-            mouse_x, mouse_y = event.pos
-
-            target_col = mouse_x // CELL_WIDTH
-            target_row = (mouse_y - SCOREBOARD_HEIGHT) // CELL_HEIGHT
-
             # INITIATE REGULAR MOVE
-            if (target_row, target_col) in self.regular_moves:
+            if (cell.row, cell.col) in self.regular_moves:
 
                 # Update attributes for piece object
-                self.selected_piece.row = target_row
-                self.selected_piece.col = target_col
+                self.selected_piece.row = cell.row
+                self.selected_piece.col = cell.col
 
-                print('Player moved to ', target_row, target_col)
+                print('Player moved to ', cell.row, cell.col)
 
                 # King if end of board
-                if target_row == 0:
+                if cell.row == 0:
                     self.selected_piece.is_king = True
 
                 self.player_turn = False
 
             # INITIATE CAPTURE MOVE
-            elif (target_row, target_col) in self.capture_moves:
+            elif (cell.row, cell.col) in self.capture_moves:
 
                 # Update attributes to move the piece object
-                self.selected_piece.row = target_row
-                self.selected_piece.col = target_col
+                self.selected_piece.row = cell.row
+                self.selected_piece.col = cell.col
 
                 # King if end of board
-                if target_row == 0:
+                if cell.row == 0:
                     self.selected_piece.is_king = True
 
                 # Remove enemy piece
                 if self.capture_moves and self.capture_pieces:  # Ensure lists are not empty
                     captured = False
                     for i, move in enumerate(self.capture_moves):
-                        if (target_row, target_col) == move:
+                        if (cell.row, cell.col) == move:
                             enemy_piece = self.find_piece(self.capture_pieces[i][0], self.capture_pieces[i][1])
                             if enemy_piece:
                                 self.pieces.remove(enemy_piece)
@@ -230,12 +188,11 @@ class Board:
                                 captured = True
                                 break
                     if not captured:
-                        # Handle unexpected target_row/target_col
                         print("Error: Target square does not match any capture moves.")
                 else:
                     print('Error: Capture moves or capture pieces are empty')
 
-                self.player_score += 1
+                self.scoreboard.increment_player_score()
                 self.player_turn = False
 
             else:
@@ -297,7 +254,7 @@ class Board:
             if end[0] == 7:
                 ai_piece.is_king = True
 
-            self.ai_score += 1
+            self.scoreboard.increment_computer_score()
 
         elif self.regular_moves:
             # Execute a regular move

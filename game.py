@@ -3,14 +3,6 @@ from board import Board
 
 from constants import *
 
-'''
-Responsibilies: 
-    1. Deal with pygame stuff - initialization, configuration, rendering lifecyle
-    2. Deal with operating system stuff - mouse events
-    3. Game loop - start() method
-'''
-
-
 class Game:
     def __init__(self):
         self.init_pygame()

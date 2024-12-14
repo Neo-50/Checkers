@@ -1,8 +1,9 @@
 import pygame
+
 from constants import *
 
 class Piece:
-    def __init__(self, window, row, col, is_player, on_mousedown):
+    def __init__(self, window, row, col, is_player = True, on_mousedown = None):
         self.window = window
         self.row = row
         self.col = col
@@ -22,7 +23,7 @@ class Piece:
         self.col = col
 
     def handle_event(self, event):
-        if (event.type == pygame.MOUSEBUTTONDOWN):
+        if (event.type == pygame.MOUSEBUTTONDOWN and self.on_mousedown):
             x, y = event.pos
             if (self.is_player and self.contains_point(x, y)):
                 self.on_mousedown(self, event)

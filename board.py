@@ -41,14 +41,8 @@ class Board:
         self.player_score = 0
         self.ai_score = 0
 
-        self.possible_moves = []
-        self.regular_moves = []
-        self.capture_moves = []
-        self.potential_double_capture_moves = []
-        self.double_capture_moves = []
-        self.double_capture_targets = []
-        self.capture_pieces = []
-        self.double_capture_pieces = []
+        self.ai_regular_moves = []
+        self.ai_capture_moves = []
 
         self.delay_start_time = None
         self.waiting_to_remove = False
@@ -129,6 +123,8 @@ class Board:
         margin_rect = pygame.Rect(0, 0, BOARD_WIDTH, 50)
         pygame.draw.rect(self.window, margin_color, margin_rect)
 
+        piece = self.selected_piece
+
         for row in range(8):
             for col in range(8):
                 rect = pygame.Rect(col * CELL_WIDTH, (row * CELL_HEIGHT) + 50, CELL_WIDTH, CELL_HEIGHT)
@@ -139,14 +135,15 @@ class Board:
                 pygame.draw.rect(self.window, color, rect)
 
                 # Add a border for valid moves
-                if (row, col) in self.regular_moves:
-                    pygame.draw.rect(self.window, border_color, rect, 3)
+                if piece:
+                    if (row, col) in piece.regular_moves:
+                        pygame.draw.rect(self.window, border_color, rect, 3)
 
-                if (row, col) in self.capture_moves:
-                    pygame.draw.rect(self.window, capture_color, rect, 3)
+                    if (row, col) in piece.capture_moves:
+                        pygame.draw.rect(self.window, capture_color, rect, 3)
 
-                if (row, col) in self.double_capture_moves:
-                    pygame.draw.rect(self.window, double_capture_color, rect, 3)
+                    if (row, col) in piece.double_capture_moves:
+                        pygame.draw.rect(self.window, double_capture_color, rect, 3)
 
     def draw_scoreboard(self):
         font = pygame.font.SysFont('Arial', 20)
@@ -180,44 +177,45 @@ class Board:
             if (piece.row == row and piece.col == col) and piece.is_player:
                 if (mouse_x - piece_x) ** 2 + (mouse_y - piece_y) ** 2 <= radius ** 2:
                     # Set dragging-related attributes
-                    self.selected_piece = (row, col)
+                    self.selected_piece = piece
                     self.drag_offset_x = mouse_x - piece_x
                     self.drag_offset_y = mouse_y - piece_y
-                    self.possible_moves = [
-                        (self.selected_piece[0] - 1, self.selected_piece[1] - 1),  # Top left
-                        (self.selected_piece[0] - 1, self.selected_piece[1] + 1),  # Top right
+                    piece.possible_moves = [
+                        (self.selected_piece.row - 1, self.selected_piece.col - 1),  # Top left
+                        (self.selected_piece.row - 1, self.selected_piece.col + 1),  # Top right
                     ]
                     if piece.is_king:
-                        self.possible_moves = [
-                            (self.selected_piece[0] - 1, self.selected_piece[1] - 1),  # Top left
-                            (self.selected_piece[0] - 1, self.selected_piece[1] + 1),  # Top right
-                            (self.selected_piece[0] + 1, self.selected_piece[1] - 1),  # Bottom left
-                            (self.selected_piece[0] + 1, self.selected_piece[1] + 1),  # Bottom right
+                        piece.possible_moves = [
+                            (self.selected_piece.row - 1, self.selected_piece.col - 1),  # Top left
+                            (self.selected_piece.row - 1, self.selected_piece.col + 1),  # Top right
+                            (self.selected_piece.row + 1, self.selected_piece.col - 1),  # Bottom left
+                            (self.selected_piece.row + 1, self.selected_piece.col + 1),  # Bottom right
                         ]
-                    self.handle_move(row, col)
+                    self.handle_move(row, col, piece)
 
-    def handle_move(self, row, col):
+    def handle_move(self, row, col, piece):
 
-        self.regular_moves.clear()
-        self.capture_moves.clear()
-        self.capture_pieces.clear()
-        self.double_capture_moves.clear()
-        self.double_capture_targets.clear()
-        self.potential_double_capture_moves.clear()
-        self.double_capture_pieces.clear()
+        piece.regular_moves.clear()
+        piece.capture_moves.clear()
+        piece.capture_pieces.clear()
+        piece.double_capture_moves.clear()
+        piece.double_capture_targets.clear()
+        piece.potential_double_capture_moves.clear()
+        piece.double_capture_pieces.clear()
 
         # Check if within bounds and empty
-        for i, move in enumerate(self.possible_moves):
+        for i, move in enumerate(piece.possible_moves):
             target_row, target_col = move
             if 0 <= target_row < 8 and 0 <= target_col < 8:  # Check within boundaries
-                target_piece = self.find_piece(target_row, target_col)  # Check for opponent piece
-                if not target_piece:  # Check if empty
-                    self.regular_moves.append((target_row, target_col))  # Append as tuple
+                check_piece = self.find_piece(target_row, target_col)  # Check for opponent piece
+                if not check_piece:  # Check if empty
+                    piece.regular_moves.append((target_row, target_col))  # Append as tuple
+                    print('Coordinates added to regular moves: ', piece.regular_moves)
                 else:
-                    enemy_piece = self.find_piece(target_row, target_col)
+                    enemy_piece = check_piece
                     if not enemy_piece.is_player:  # Filter player pieces
                         # SAVE ENEMY PIECE LOCATION
-                        self.capture_pieces.append((target_row, target_col, i))
+                        piece.capture_pieces.append((target_row, target_col, i))
 
                         # Calculate the landing square for a capture
                         landing_row = target_row - (row - target_row)  # Mirror target_row
@@ -229,51 +227,51 @@ class Board:
                             and 0 <= landing_col < 8
                             and self.find_piece(landing_row, landing_col) is None
                         ):
-                            self.capture_moves.append((landing_row, landing_col))  # Add to capture moves
-                            self.check_double_captures(row, col)
+                            piece.capture_moves.append((landing_row, landing_col))  # Add to capture moves
+                            self.check_double_captures(row, col, piece)
 
-    def check_double_captures(self, row, col):
-        if self.capture_moves:
+    def check_double_captures(self, row, col, piece):
+        if piece.capture_moves:
             #  LANDING SQUARE FROM THE FIRST CAPTURE BRANCHES INTO 2 SQUARES
             #  POTENTIALLY CONTAINING OPPONENT PIECES
-            self.potential_double_capture_moves.extend([
-                (self.capture_moves[0][0] - 1, self.capture_moves[0][1] - 1),  # Top left
-                (self.capture_moves[0][0] - 1, self.capture_moves[0][1] + 1)  # Top right
+            piece.potential_double_capture_moves.extend([
+                (piece.capture_moves[0][0] - 1, piece.capture_moves[0][1] - 1),  # Top left
+                (piece.capture_moves[0][0] - 1, piece.capture_moves[0][1] + 1)  # Top right
             ])
-            piece = self.find_piece(self.selected_piece[0], self.selected_piece[1])
-            if piece and piece.is_king:
-                self.potential_double_capture_moves.extend([
-                    (self.capture_moves[0][0] - 1, self.capture_moves[0][1] - 1),  # Top left
-                    (self.capture_moves[0][0] - 1, self.capture_moves[0][1] + 1),  # Top right
-                    (self.capture_moves[0][0] + 1, self.capture_moves[0][1] - 1),  # Bottom left
-                    (self.capture_moves[0][0] + 1, self.capture_moves[0][1] + 1)  # Bottom right
+
+            if piece.is_king:
+                piece.potential_double_capture_moves.extend([
+                    (piece.capture_moves[0][0] - 1, piece.capture_moves[0][1] - 1),  # Top left
+                    (piece.capture_moves[0][0] - 1, piece.capture_moves[0][1] + 1),  # Top right
+                    (piece.capture_moves[0][0] + 1, piece.capture_moves[0][1] - 1),  # Bottom left
+                    (piece.capture_moves[0][0] + 1, piece.capture_moves[0][1] + 1)  # Bottom right
                 ])
 
-        if len(self.capture_moves) > 1:
-            self.potential_double_capture_moves.extend([
-                (self.capture_moves[1][0] - 1, self.capture_moves[1][1] - 1),  # Top left
-                (self.capture_moves[1][0] - 1, self.capture_moves[1][1] + 1)  # Top right
+        if len(piece.capture_moves) > 1:
+            piece.potential_double_capture_moves.extend([
+                (piece.capture_moves[1][0] - 1, piece.capture_moves[1][1] - 1),  # Top left
+                (piece.capture_moves[1][0] - 1, piece.capture_moves[1][1] + 1)  # Top right
             ])
-            piece = self.find_piece(self.selected_piece[0], self.selected_piece[1])
-            if piece and piece.is_king:
-                self.potential_double_capture_moves.extend([
-                    (self.capture_moves[1][0] - 1, self.capture_moves[1][1] - 1),  # Top left
-                    (self.capture_moves[1][0] - 1, self.capture_moves[1][1] + 1),  # Top right
-                    (self.capture_moves[1][0] + 1, self.capture_moves[1][1] - 1),  # Bottom left
-                    (self.capture_moves[1][0] + 1, self.capture_moves[1][1] + 1)  # Bottom right
+
+            if piece.is_king:
+                piece.potential_double_capture_moves.extend([
+                    (piece.capture_moves[1][0] - 1, piece.capture_moves[1][1] - 1),  # Top left
+                    (piece.capture_moves[1][0] - 1, piece.capture_moves[1][1] + 1),  # Top right
+                    (piece.capture_moves[1][0] + 1, piece.capture_moves[1][1] - 1),  # Bottom left
+                    (piece.capture_moves[1][0] + 1, piece.capture_moves[1][1] + 1)  # Bottom right
                 ])
 
         #  CHECK IF IN BOUNDS
-        self.double_capture_targets = [
-            i for i in self.potential_double_capture_moves if all(8 > j > 0 for j in i)
+        piece.double_capture_targets = [
+            i for i in piece.potential_double_capture_moves if all(8 > j > 0 for j in i)
         ]
-        for i, j in enumerate(self.double_capture_targets):
-            piece = self.find_piece(j[0], j[1])
-            if piece and not piece.is_player:  # Check if squares contain an opponent piece
+        for i, j in enumerate(piece.double_capture_targets):
+            enemy_piece = self.find_piece(j[0], j[1])
+            if enemy_piece and not enemy_piece.is_player:  # Check if squares contain an opponent piece
 
                 # SAVE SECOND ENEMY PIECE LOCATION
-                self.double_capture_pieces.append((piece.row, piece.col))
-                print(f'Pieces added to double capture pieces: ({piece.row}, {piece.col})')
+                piece.double_capture_pieces.append((enemy_piece.row, enemy_piece.col))
+                print(f'Pieces added to double capture pieces: ({enemy_piece.row}, {enemy_piece.col})')
 
                 # CALCULATE LEFT LANDING SQUARE
                 if i == 0:
@@ -286,7 +284,7 @@ class Board:
                     if 8 > landing_row >= 0 and 8 > landing_col >= 0:  # Check if in bounds
                         landing_check = self.find_piece(landing_row, landing_col)  # Check if empty
                         if not landing_check:
-                            self.double_capture_moves.append((landing_row, landing_col))
+                            piece.double_capture_moves.append((landing_row, landing_col))
                             print(f'Left double capture move found at: ({landing_row}, {landing_col})')
                             print('---------------')
 
@@ -299,16 +297,16 @@ class Board:
                     if 8 > landing_row >= 0 and 8 > landing_col >= 0:  # Check if in bounds
                         landing_check = self.find_piece(landing_row, landing_col)  # Check if empty
                         if not landing_check:
-                            self.double_capture_moves.append((landing_row, landing_col))
+                            piece.double_capture_moves.append((landing_row, landing_col))
                             print(f'Right double capture move found at: ({landing_row}, {landing_col})')
 
-                            self.double_capture_pieces.append((piece.row, piece.col))
+                            piece.double_capture_pieces.append((piece.row, piece.col))
                             print(f'Pieces added to double capture pieces: ({piece.row}, {piece.col})')
                             print('---------------')
 
     def draw_dragging_piece(self):
         if self.selected_piece:
-            piece = self.find_piece(self.selected_piece[0], self.selected_piece[1])
+            piece = self.selected_piece
             if piece:
                 if piece.is_king:
                     color = COLORS['player_king']
@@ -325,7 +323,7 @@ class Board:
 
     def handle_mouseup(self, event):
         if self.selected_piece:
-            piece = self.find_piece(self.selected_piece[0], self.selected_piece[1])
+            piece = self.selected_piece
             if piece:
                 piece.hidden = False  # Make piece visible again
 
@@ -335,13 +333,11 @@ class Board:
             target_row = (mouse_y - 50) // CELL_HEIGHT
 
             # INITIATE REGULAR MOVE
-            if (target_row, target_col) in self.regular_moves:
+            if (target_row, target_col) in piece.regular_moves:
 
                 # Update attributes for piece object
-                piece = self.find_piece(self.selected_piece[0], self.selected_piece[1])
-                if piece:
-                    piece.row = target_row
-                    piece.col = target_col
+                piece.row = target_row
+                piece.col = target_col
 
                 print('Player moved to ', target_row, target_col)
 
@@ -349,29 +345,28 @@ class Board:
                 if target_row == 0:
                     piece.is_king = True
 
+                self.selected_piece = None
                 self.player_turn = False
 
-                pygame.time.wait(500)
-
             # INITIATE CAPTURE MOVE
-            elif (target_row, target_col) in self.capture_moves:
+            elif (target_row, target_col) in piece.capture_moves:
 
                 # Update attributes to move the piece object
-                piece = self.find_piece(self.selected_piece[0], self.selected_piece[1])
-                if piece:
-                    piece.row = target_row
-                    piece.col = target_col
+                piece.row = target_row
+                piece.col = target_col
 
                 # King if end of board
                 if target_row == 0:
                     piece.is_king = True
 
+                self.selected_piece = None
+
                 # Remove enemy piece
-                if self.capture_moves and self.capture_pieces:  # Ensure lists are not empty
+                if piece.capture_moves and piece.capture_pieces:  # Ensure lists are not empty
                     captured = False
-                    for i, move in enumerate(self.capture_moves):
+                    for i, move in enumerate(piece.capture_moves):
                         if (target_row, target_col) == move:
-                            enemy_piece = self.find_piece(self.capture_pieces[i][0], self.capture_pieces[i][1])
+                            enemy_piece = self.find_piece(piece.capture_pieces[i][0], piece.capture_pieces[i][1])
                             if enemy_piece:
                                 self.pieces.remove(enemy_piece)
                                 print(f'Piece removed: ({enemy_piece.row}, {enemy_piece.col})')
@@ -387,22 +382,20 @@ class Board:
                 self.player_turn = False
 
             # INITIATE DOUBLE CAPTURE MOVE
-            elif (target_row, target_col) in self.double_capture_moves:
+            elif (target_row, target_col) in piece.double_capture_moves:
 
                 # Update attributes to move the piece object
-                piece = self.find_piece(self.selected_piece[0], self.selected_piece[1])
-                if piece:
-                    piece.row = target_row
-                    piece.col = target_col
+                piece.row = target_row
+                piece.col = target_col
 
                 # King if end of board
                 if target_row == 0:
                     piece.is_king = True
 
-                for i, move in enumerate(self.double_capture_moves):
+                for i, move in enumerate(piece.double_capture_moves):
                     if (target_row, target_col) == move:
-                        enemy_piece1 = self.find_piece(self.double_capture_pieces[i][0],
-                                                       self.double_capture_pieces[i][1])
+                        enemy_piece1 = self.find_piece(piece.double_capture_pieces[i][0],
+                                                       piece.double_capture_pieces[i][1])
                         if enemy_piece1:
                             self.pieces.remove(enemy_piece1)
                             print(f'Second piece removed for double capture: ({enemy_piece1.row}, {enemy_piece1.col})')
@@ -410,45 +403,47 @@ class Board:
                         else:
                             print('Unable to remove enemy_piece1')
 
-                for i, piece in enumerate(self.capture_pieces):
-                    if self.capture_pieces[i][2] == 0:
-                        enemy_piece2 = self.find_piece(self.capture_pieces[i][0],
-                                                       self.capture_pieces[i][1])
+                for i, capture_piece in enumerate(piece.capture_pieces):
+                    if piece.capture_pieces[i][2] == 0:
+                        enemy_piece2 = self.find_piece(piece.capture_pieces[i][0],
+                                                       piece.capture_pieces[i][1])
                         if enemy_piece2:
                             self.pieces.remove(enemy_piece2)
                             print(f'First piece removed for double capture: '
                                   f'({enemy_piece2.row}, {enemy_piece2.col})')
                             self.player_score += 1
+                            self.selected_piece = None
                             self.player_turn = False
                             break
                         else:
                             print('Unable to remove enemy_piece2 pos1')
 
-                    elif self.capture_pieces[i][2] == 1:
-                        enemy_piece2 = self.find_piece(self.capture_pieces[i][0],
-                                                       self.capture_pieces[i][1])
+                    elif piece.capture_pieces[i][2] == 1:
+                        enemy_piece2 = self.find_piece(piece.capture_pieces[i][0],
+                                                       piece.capture_pieces[i][1])
                         if enemy_piece2:
                             self.pieces.remove(enemy_piece2)
                             print(f'First piece in second position removed for double capture: '
                                   f'({enemy_piece2.row}, {enemy_piece2.col})')
                             self.player_score += 1
+                            self.selected_piece = None
                             self.player_turn = False
                             break
                         else:
                             print('Unable to remove enemy_piece2 pos2')
             else:
-                print('Error: Moves list is empty or target square does not match moves list')
-
-        self.regular_moves.clear()
-        self.capture_moves.clear()
-        self.capture_pieces.clear()
-        self.double_capture_moves.clear()
-        self.double_capture_targets.clear()
-        self.potential_double_capture_moves.clear()
-        self.double_capture_pieces.clear()
-        self.selected_piece = None
+                self.selected_piece = None
+                piece.regular_moves.clear()
+                piece.capture_moves.clear()
+                piece.capture_pieces.clear()
+                piece.double_capture_moves.clear()
+                piece.double_capture_targets.clear()
+                piece.potential_double_capture_moves.clear()
+                piece.double_capture_pieces.clear()
 
     def ai_move(self):
+        self.ai_regular_moves.clear()
+        self.ai_capture_moves.clear()
         for row in range(8):
             for col in range(8):
                 piece = self.find_piece(row, col)
@@ -478,20 +473,24 @@ class Board:
                                             0 <= landing_row < 8 and 0 <= landing_col < 8
                                             and not self.find_piece(landing_row, landing_col)
                                     ):
-                                        self.capture_moves.append(
+                                        self.ai_capture_moves.append(
                                             ((row, col), (landing_row, landing_col), (target_row, target_col)))
 
                                 # Check for regular moves
                                 elif not self.find_piece(target_row, target_col):
-                                    self.regular_moves.append(((row, col), (target_row, target_col)))
+                                    self.ai_regular_moves.append(((row, col), (target_row, target_col)))
 
-        if self.capture_moves:
+        if self.ai_capture_moves:
             # Execute a capture (prioritized over regular moves)
-            start, end, captured = choice(self.capture_moves)
+            start, end, captured = choice(self.ai_capture_moves)
 
             pygame.time.wait(50)
 
             ai_piece = self.find_piece(start[0], start[1])
+            if ai_piece:
+                print(f'AI piece row, col = ({ai_piece.row}, {ai_piece.col})')
+            else:
+                print(f'AI piece not found!')
 
             # Set up animation
             self.animating_piece = ai_piece
@@ -512,13 +511,17 @@ class Board:
 
             self.ai_score += 1
 
-        elif self.regular_moves:
+        elif self.ai_regular_moves:
             # Execute a regular move
-            start, end = choice(self.regular_moves)
+            start, end = choice(self.ai_regular_moves)
 
             pygame.time.wait(50)
 
             ai_piece = self.find_piece(start[0], start[1])
+            if ai_piece:
+                print(f'AI piece row, col = ({ai_piece.row}, {ai_piece.col})')
+            else:
+                print(f'AI piece not found!')
 
             # Set up animation
             self.animating_piece = ai_piece

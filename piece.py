@@ -5,14 +5,16 @@ from vector import Vector
 from cell import Cell
 
 class Piece:
-    def __init__(self, window, row, col, is_player = True, on_mousedown = None):
+    def __init__(self, window, position: Cell, is_player: bool = True, on_mousedown = None):
         self.window = window
-        self.row = row
-        self.col = col
+        self.position = position
         self.is_player = is_player
         self.hidden = False
         self.is_king = False
         self.on_mousedown = on_mousedown
+
+    def __eq__(self, other):
+        return self.position == other.position
 
     def draw(self):
         if (not self.hidden):
@@ -24,9 +26,8 @@ class Piece:
     def show(self):
         self.hidden = False
 
-    def set_position(self, row, col):
-        self.row = row
-        self.col = col
+    def set_position(self, position: Cell):
+        self.position = position
 
     def handle_event(self, event):
         if (event.type == pygame.MOUSEBUTTONDOWN and self.on_mousedown):
@@ -38,21 +39,22 @@ class Piece:
         return (point.x - position.x) ** 2 + (point.y - position.y) ** 2 <= PIECE_RADIUS ** 2
 
     def get_absolute_position(self):
-        x = self.col * CELL_WIDTH + CELL_WIDTH // 2
-        y = self.row * CELL_HEIGHT + CELL_HEIGHT // 2 + SCOREBOARD_HEIGHT
+        x = self.position.col * CELL_WIDTH + CELL_WIDTH // 2
+        y = self.position.row * CELL_HEIGHT + CELL_HEIGHT // 2 + SCOREBOARD_HEIGHT
         return Vector(x, y)
 
     def promote(self):
         self.is_king = True
 
     def get_adjacent_cells(self):
+        y_dir = 1 if self.is_player else -1 # Invert y if we're a computer piece
         adjacents = [
-            Cell(self.row - 1, self.col - 1),  # Top left
-            Cell(self.row - 1, self.col + 1),  # Top right
+            Cell(self.position.row - 1, self.position.col - y_dir),
+            Cell(self.position.row - 1, self.position.col + y_dir)
         ]
         if self.is_king:
-            adjacents.append(Cell(self.row + 1, self.col - 1))   # Bottom left
-            adjacents.append(Cell(self.row + 1, self.col + 1))   # Bottom right
+            adjacents.append(Cell(self.position.row + 1, self.position.col - y_dir))
+            adjacents.append(Cell(self.position.row + 1, self.position.col + y_dir))
         return adjacents
 
     def get_color(self):

@@ -324,30 +324,27 @@ class Board:
 
                 # Remove enemy piece
                 if piece.capture_moves and piece.capture_pieces:  # Ensure lists are not empty
-                    captured = False
 
                     for i, capture_piece in enumerate(piece.capture_pieces):
                         if piece.col - 1 == capture_piece[1]:
-                            print('Capture piece left found!')
                             remove_piece = self.find_piece(capture_piece[i], capture_piece[1])
                             self.pieces.remove(remove_piece)
+                            print(f'Left piece removed: ({remove_piece.row}, {remove_piece.col})')
+                            self.player_score += 1
+                            # self.player_turn = False
                             break
                         elif piece.col + 1 == capture_piece[1]:
-                            print('Capture piece right found!')
                             remove_piece = self.find_piece(capture_piece[i], capture_piece[1])
                             self.pieces.remove(remove_piece)
+                            print(f'Right piece removed: ({remove_piece.row}, {remove_piece.col})')
+                            self.player_score += 1
+                            # self.player_turn = False
                             break
                         else:
                             print('Unable to find capture piece!')
                             break
-
-                    if not captured:
-                        # Handle unexpected target_row/target_col
-                        print("Error: Target square does not match any capture moves.")
                 else:
                     print('Error: Capture moves or capture pieces are empty')
-
-                self.player_score += 1
 
             # INITIATE DOUBLE CAPTURE MOVE
             elif (target_row, target_col) in piece.double_capture_moves:

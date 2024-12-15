@@ -26,7 +26,6 @@ class Game:
     def start(self):
         while self.running:
             self.handle_events()
-            self.board.update()
             self.board.draw()
             pygame.display.flip()
             pygame.time.Clock().tick(60)

@@ -3,7 +3,6 @@ import pygame
 
 from constants import *
 from piece import Piece
-from random import choice
 
 '''
 Responsibilies: 
@@ -18,19 +17,14 @@ class Board:
         self.window = window
         self.pieces = [
             # Computer
-            Piece(self.window, 0, 0, False, False), Piece(self.window, 0, 2, False, False),
-            Piece(self.window, 0, 4, False, False), Piece(self.window, 0, 6, False, False),
-            Piece(self.window, 1, 1, False, False), Piece(self.window, 1, 3, False, False),
-            Piece(self.window, 1, 5, False, False), Piece(self.window, 1, 7, False, False),
-            Piece(self.window, 2, 0, False, False), Piece(self.window, 2, 2, False, False),
-            Piece(self.window, 2, 4, False, False), Piece(self.window, 2, 6, False, False),
+            Piece(self.window, 3, 3, False, False),
+            Piece(self.window, 3, 5, False, False),
+            Piece(self.window, 1, 1, False, False),
+            Piece(self.window, 1, 3, False, False),
+            Piece(self.window, 1, 5, False, False),
+            Piece(self.window, 1, 7, False, False),
             # Player
-            Piece(self.window, 5, 7, True, False), Piece(self.window, 5, 5, True, False),
-            Piece(self.window, 5, 3, True, False), Piece(self.window, 5, 1, True, False),
-            Piece(self.window, 6, 6, True, False), Piece(self.window, 6, 4, True, False),
-            Piece(self.window, 6, 2, True, False), Piece(self.window, 6, 0, True, False),
-            Piece(self.window, 7, 7, True, False), Piece(self.window, 7, 5, True, False),
-            Piece(self.window, 7, 3, True, False), Piece(self.window, 7, 1, True, False)
+            Piece(self.window, 4, 4, True, False),
         ]
 
         self.selected_piece = None
@@ -39,7 +33,6 @@ class Board:
         self.drag_offset_y = 0
 
         self.player_score = 0
-        self.ai_score = 0
 
         self.ai_regular_moves = []
         self.ai_capture_moves = []
@@ -54,36 +47,6 @@ class Board:
         self.animation_end = None
         self.animation_progress = 0  # Progress percentage (0 to 1)
         self.animation_speed = 0.05  # Adjust for animation speed
-
-    def update(self):
-        if self.animating_piece:
-            # Calculate animation progress
-            self.animation_progress += self.animation_speed
-            if self.animation_progress >= 1:
-                self.animation_progress = 1  # Clamp to finish animation
-                self.animating_piece.row, self.animating_piece.col = self.animation_end
-                self.animating_piece = None  # End animation
-
-                # If animation ends and a capture was made, continue handling it
-                if self.waiting_to_remove:
-                    current_time = pygame.time.get_ticks()
-                    if current_time - self.delay_start_time >= 5000:  # 5-second delay
-                        if self.pending_capture:
-                            self.pieces.remove(self.pending_capture)
-                            print(f"Piece removed: ({self.pending_capture.row}, {self.pending_capture.col})")
-                        self.pending_capture = None
-                        self.waiting_to_remove = False
-        if self.waiting_to_remove:
-            current_time = pygame.time.get_ticks()
-            if current_time - self.delay_start_time >= 600:
-                if self.pending_capture:
-                    self.pieces.remove(self.pending_capture)
-                    print(f"Piece removed: ({self.pending_capture.row}, {self.pending_capture.col})")
-                self.pending_capture = None
-                self.waiting_to_remove = False
-        elif not self.player_turn:
-            self.ai_move()
-            self.player_turn = True
 
     def draw(self):
         self.clear()
@@ -125,8 +88,8 @@ class Board:
 
         piece = self.selected_piece
 
-        for row in range(8):
-            for col in range(8):
+        for row in range(5):
+            for col in range(9):
                 rect = pygame.Rect(col * CELL_WIDTH, (row * CELL_HEIGHT) + 50, CELL_WIDTH, CELL_HEIGHT)
                 if (row + col) % 2 == 0:
                     color = light_color
@@ -149,7 +112,7 @@ class Board:
         font = pygame.font.SysFont('Arial', 20)
         text_color = (0, 0, 0)  # Black color for the text
 
-        score_text = font.render(f'Player: {self.player_score}    |    AI: {self.ai_score}', True, text_color)
+        score_text = font.render(f'Player: {self.player_score}', True, text_color)
         title_text = font.render('Checkers', True, text_color)
 
         score_text_width = score_text.get_width()
@@ -203,11 +166,10 @@ class Board:
         piece.potential_double_capture_moves.clear()
         piece.double_capture_pieces.clear()
 
-        # Check if within bounds and empty
         for i, move in enumerate(piece.possible_moves):
             target_row, target_col = move
-            if 0 <= target_row < 8 and 0 <= target_col < 8:  # Check within boundaries
-                check_piece = self.find_piece(target_row, target_col)  # Check for opponent piece
+            if 0 <= target_row < 6 and 0 <= target_col < 9:  # CHECK BOUNDARIES
+                check_piece = self.find_piece(target_row, target_col)  # CHECK FOR ENEMY PIECE
                 if not check_piece:  # Check if empty
                     piece.regular_moves.append((target_row, target_col))  # Append as tuple
                     print('Coordinates added to regular moves: ', piece.regular_moves)
@@ -221,10 +183,10 @@ class Board:
                         landing_row = target_row - (row - target_row)  # Mirror target_row
                         landing_col = target_col - (col - target_col)  # Mirror target_col
 
-                        # Ensure landing square is within bounds and empty
+                        # CHECK BOUNDARIES AND EMPTY
                         if (
-                            0 <= landing_row < 8
-                            and 0 <= landing_col < 8
+                            0 <= landing_row < 6
+                            and 0 <= landing_col < 9
                             and self.find_piece(landing_row, landing_col) is None
                         ):
                             piece.capture_moves.append((landing_row, landing_col))  # Add to capture moves
@@ -261,9 +223,9 @@ class Board:
                     (piece.capture_moves[1][0] + 1, piece.capture_moves[1][1] + 1)  # Bottom right
                 ])
 
-        #  CHECK IF IN BOUNDS
+        #  CHECK BOUNDARIES
         piece.double_capture_targets = [
-            i for i in piece.potential_double_capture_moves if all(8 > j > 0 for j in i)
+            i for i in piece.potential_double_capture_moves if all(9 > j > 0 for j in i)
         ]
         for i, j in enumerate(piece.double_capture_targets):
             enemy_piece = self.find_piece(j[0], j[1])
@@ -281,8 +243,8 @@ class Board:
                     print(f'Player piece at: {row}, {col}')
                     print(f'Second capture piece at: {j[0]}, {j[1]}')
                     print('---------------')
-                    if 8 > landing_row >= 0 and 8 > landing_col >= 0:  # Check if in bounds
-                        landing_check = self.find_piece(landing_row, landing_col)  # Check if empty
+                    if 6 > landing_row >= 0 and 9 > landing_col >= 0:  # CHECK BOUNDARIES
+                        landing_check = self.find_piece(landing_row, landing_col)  # CHECK EMPTY
                         if not landing_check:
                             piece.double_capture_moves.append((landing_row, landing_col))
                             print(f'Left double capture move found at: ({landing_row}, {landing_col})')
@@ -294,8 +256,8 @@ class Board:
                     landing_col = j[1] + 1
                     print(f"Right landing square check: ({landing_row}, {landing_col})")
                     print('---------------')
-                    if 8 > landing_row >= 0 and 8 > landing_col >= 0:  # Check if in bounds
-                        landing_check = self.find_piece(landing_row, landing_col)  # Check if empty
+                    if 6 > landing_row >= 0 and 9 > landing_col >= 0:  # CHECK BOUNDARIES
+                        landing_check = self.find_piece(landing_row, landing_col)  # CHECK EMPTY
                         if not landing_check:
                             piece.double_capture_moves.append((landing_row, landing_col))
                             print(f'Right double capture move found at: ({landing_row}, {landing_col})')
@@ -346,7 +308,6 @@ class Board:
                     piece.is_king = True
 
                 self.selected_piece = None
-                self.player_turn = False
 
             # INITIATE CAPTURE MOVE
             elif (target_row, target_col) in piece.capture_moves:
@@ -387,7 +348,6 @@ class Board:
                     print('Error: Capture moves or capture pieces are empty')
 
                 self.player_score += 1
-                self.player_turn = False
 
             # INITIATE DOUBLE CAPTURE MOVE
             elif (target_row, target_col) in piece.double_capture_moves:
@@ -421,7 +381,6 @@ class Board:
                                   f'({enemy_piece2.row}, {enemy_piece2.col})')
                             self.player_score += 1
                             self.selected_piece = None
-                            self.player_turn = False
                             break
                         else:
                             print('Unable to remove enemy_piece2 pos1')
@@ -435,7 +394,6 @@ class Board:
                                   f'({enemy_piece2.row}, {enemy_piece2.col})')
                             self.player_score += 1
                             self.selected_piece = None
-                            self.player_turn = False
                             break
                         else:
                             print('Unable to remove enemy_piece2 pos2')
@@ -448,98 +406,3 @@ class Board:
                 piece.double_capture_targets.clear()
                 piece.potential_double_capture_moves.clear()
                 piece.double_capture_pieces.clear()
-
-    def ai_move(self):
-        self.ai_regular_moves.clear()
-        self.ai_capture_moves.clear()
-        for row in range(8):
-            for col in range(8):
-                piece = self.find_piece(row, col)
-                if piece:
-                    if piece.is_player is False:  # Check for AI pieces
-                        potential_moves = [
-                            (row + 1, col - 1),  # Forward-left
-                            (row + 1, col + 1),  # Forward-right
-                        ]
-                        if piece.is_king is True:
-                            potential_moves = [
-                                (row + 1, col - 1),  # Forward-left
-                                (row + 1, col + 1),  # Forward-right
-                                (row - 1, col - 1),  # Backward-left
-                                (row - 1, col + 1),  # Backward-right
-                            ]
-                        for target_row, target_col in potential_moves:
-                            if 0 <= target_row < 8 and 0 <= target_col < 8:  # Within boundaries
-
-                                # Check if opponent's piece is in the target square
-                                enemy_piece = self.find_piece(target_row, target_col)
-                                if enemy_piece and enemy_piece.is_player:
-                                    # Calculate the landing square
-                                    landing_row = target_row + (target_row - row)
-                                    landing_col = target_col + (target_col - col)
-                                    if (
-                                            0 <= landing_row < 8 and 0 <= landing_col < 8
-                                            and not self.find_piece(landing_row, landing_col)
-                                    ):
-                                        self.ai_capture_moves.append(
-                                            ((row, col), (landing_row, landing_col), (target_row, target_col)))
-
-                                # Check for regular moves
-                                elif not self.find_piece(target_row, target_col):
-                                    self.ai_regular_moves.append(((row, col), (target_row, target_col)))
-
-        if self.ai_capture_moves:
-            # Execute a capture (prioritized over regular moves)
-            start, end, captured = choice(self.ai_capture_moves)
-
-            pygame.time.wait(50)
-
-            ai_piece = self.find_piece(start[0], start[1])
-            if ai_piece:
-                print(f'AI piece row, col = ({ai_piece.row}, {ai_piece.col})')
-            else:
-                print(f'AI piece not found!')
-
-            # Set up animation
-            self.animating_piece = ai_piece
-            self.animation_start = (ai_piece.row, ai_piece.col)
-            self.animation_end = end
-            self.animation_progress = 0  # Reset progress
-
-            capture_piece = self.find_piece(captured[0], captured[1])
-
-            if capture_piece:
-                self.pending_capture = capture_piece
-                self.delay_start_time = pygame.time.get_ticks()
-                self.waiting_to_remove = True
-
-            # King if end of board
-            if end[0] == 7:
-                ai_piece.is_king = True
-
-            self.ai_score += 1
-
-        elif self.ai_regular_moves:
-            # Execute a regular move
-            start, end = choice(self.ai_regular_moves)
-
-            pygame.time.wait(50)
-
-            ai_piece = self.find_piece(start[0], start[1])
-            if ai_piece:
-                print(f'AI piece row, col = ({ai_piece.row}, {ai_piece.col})')
-            else:
-                print(f'AI piece not found!')
-
-            # Set up animation
-            self.animating_piece = ai_piece
-            self.animation_start = (ai_piece.row, ai_piece.col)
-            self.animation_end = end
-            self.animation_progress = 0  # Reset progress
-
-            # King if end of board
-            if end[0] == 7:
-                ai_piece.is_king = True
-
-        else:
-            print("No valid moves for AI!")

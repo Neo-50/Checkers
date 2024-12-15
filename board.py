@@ -357,43 +357,35 @@ class Board:
                 if target_row == 0:
                     piece.is_king = True
 
-                for i, move in enumerate(piece.double_capture_moves):
-                    if (target_row, target_col) == move:
-                        enemy_piece1 = self.find_piece(piece.double_capture_pieces[i][0],
-                                                       piece.double_capture_pieces[i][1])
-                        if enemy_piece1:
-                            self.pieces.remove(enemy_piece1)
-                            print(f'Second piece removed for double capture: ({enemy_piece1.row}, {enemy_piece1.col})')
-                            self.player_score += 1
-                        else:
-                            print('Unable to remove enemy_piece1')
-
-                for i, capture_piece in enumerate(piece.capture_pieces):
-                    if piece.capture_pieces[i][2] == 0:
-                        enemy_piece2 = self.find_piece(piece.capture_pieces[i][0],
-                                                       piece.capture_pieces[i][1])
-                        if enemy_piece2:
-                            self.pieces.remove(enemy_piece2)
-                            print(f'First piece removed for double capture: '
-                                  f'({enemy_piece2.row}, {enemy_piece2.col})')
+                if piece.double_capture_pieces:  # Ensure list is not empty
+                    for i, capture_piece in enumerate(piece.double_capture_pieces):
+                        print(f'Double capture pieces: {piece.double_capture_pieces[i]}')
+                        if piece.col + 1 == capture_piece[1]:
+                            print('Double capture piece found right of landing square!')
+                            remove_piece = self.find_piece(capture_piece[i], capture_piece[1])
+                            self.pieces.remove(remove_piece)
+                            print(f'Double capture piece removed: ({remove_piece.row}, {remove_piece.col}) \n')
                             self.player_score += 1
                             self.selected_piece = None
+                            piece.double_capture_pieces.clear()
+                            self.player_turn = False
                             break
-                        else:
-                            print('Unable to remove enemy_piece2 pos1')
-
-                    elif piece.capture_pieces[i][2] == 1:
-                        enemy_piece2 = self.find_piece(piece.capture_pieces[i][0],
-                                                       piece.capture_pieces[i][1])
-                        if enemy_piece2:
-                            self.pieces.remove(enemy_piece2)
-                            print(f'First piece in second position removed for double capture: '
-                                  f'({enemy_piece2.row}, {enemy_piece2.col})')
+                        elif piece.col - 1 == capture_piece[1]:
+                            print('Double capture piece found left of landing square!')
+                            remove_piece = self.find_piece(capture_piece[i], capture_piece[1])
+                            print(f'Double capture piece removed via 2nd block: '
+                                  f'({remove_piece.row}, {remove_piece.col}) \n')
+                            self.pieces.remove(remove_piece)
                             self.player_score += 1
                             self.selected_piece = None
+                            piece.double_capture_pieces.clear()
+                            self.player_turn = False
                             break
                         else:
-                            print('Unable to remove enemy_piece2 pos2')
+                            self.selected_piece = None
+                            print('Unable to find double capture piece!')
+                            piece.double_capture_pieces.clear()
+                            break
             else:
                 self.selected_piece = None
                 piece.regular_moves.clear()

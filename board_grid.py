@@ -9,11 +9,23 @@ class BoardGrid:
         self.window = window
         self.origin = origin
         self.on_mouseup = on_mouseup
+        self.highlighted_cells = []
     
     def draw(self):
+        self.draw_margin()
+        self.draw_cells()
+        self.draw_highlighted_cells()
+
+    def draw_highlighted_cells(self):
+        for cell in self.highlighted_cells:
+            rect = pygame.Rect((cell.col * CELL_WIDTH) + self.origin.x, (cell.row * CELL_HEIGHT) + self.origin.y, CELL_WIDTH, CELL_HEIGHT)
+            pygame.draw.rect(self.window, COLORS['border_color'], rect, 3)
+
+    def draw_margin(self):
         margin_rect = pygame.Rect(self.origin.x, self.origin.y, BOARD_WIDTH, BOARD_HEIGHT)
         pygame.draw.rect(self.window, COLORS['margin_color'], margin_rect)
 
+    def draw_cells(self):
         for row in range(NUM_ROWS):
             for col in range(NUM_COLS):
                 rect = pygame.Rect((col * CELL_WIDTH) + self.origin.x, (row * CELL_HEIGHT) + self.origin.y, CELL_WIDTH, CELL_HEIGHT)
@@ -23,14 +35,11 @@ class BoardGrid:
                     color = COLORS['dark_color']
                 pygame.draw.rect(self.window, color, rect)
 
-                # Add a border for valid moves
-                '''
-                if (row, col) in self.regular_moves:
-                    pygame.draw.rect(self.window, COLORS['border_color'], rect, 3)
+    def highlight_cell(self, cell):
+        self.highlighted_cells.append(cell)
 
-                if (row, col) in self.capture_moves:
-                    pygame.draw.rect(self.window, COLORS['capture_color'], rect, 3)
-                '''
+    def clear_highlighted_cells(self):
+        self.highlighted_cells = []
 
     def handle_event(self, event):
         if (event.type == pygame.MOUSEBUTTONUP):

@@ -2,6 +2,7 @@ import pygame
 
 from constants import *
 from vector import Vector
+from cell import Cell
 
 class Piece:
     def __init__(self, window, row, col, is_player = True, on_mousedown = None):
@@ -43,6 +44,16 @@ class Piece:
 
     def promote(self):
         self.is_king = True
+
+    def get_adjacent_cells(self):
+        adjacents = [
+            Cell(self.row - 1, self.col - 1),  # Top left
+            Cell(self.row - 1, self.col + 1),  # Top right
+        ]
+        if self.is_king:
+            adjacents.append(Cell(self.row + 1, self.col - 1))   # Bottom left
+            adjacents.append(Cell(self.row + 1, self.col + 1))   # Bottom right
+        return adjacents
 
     def get_color(self):
         if self.is_player:

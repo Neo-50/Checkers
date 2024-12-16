@@ -265,6 +265,10 @@ class Board:
                 # SAVE SECOND ENEMY PIECE LOCATION
                 piece.double_capture_pieces.append((enemy_piece.row, enemy_piece.col))
                 print(f'Double capture pieces: {piece.double_capture_pieces}')
+
+        self.find_double_landing_squares(piece)
+
+    def find_double_landing_squares(self, piece):
         for i, j in enumerate(piece.capture_moves):
             # CALCULATE LEFT LANDING SQUARE
             landing_row = j[0] - 2
@@ -285,6 +289,25 @@ class Board:
                     check_piece = self.find_piece(landing_row + 1, landing_col - 1)
                     if check_piece:
                         piece.double_capture_moves.append((landing_row, landing_col))
+            if piece.is_king:
+                # CALCULATE BOTTOM LEFT LANDING SQUARE
+                landing_row = j[0] + 2
+                landing_col = j[1] - 2
+                if 8 > landing_row >= 0 and 8 > landing_col >= 0:  # CHECK BOUNDARIES
+                    landing_check = self.find_piece(landing_row, landing_col)  # CHECK EMPTY
+                    if not landing_check:
+                        check_piece = self.find_piece(landing_row + 1, landing_col - 1)
+                        if check_piece:
+                            piece.double_capture_moves.append((landing_row, landing_col))
+                # CALCULATE BOTTOM RIGHT LANDING SQUARE
+                landing_row = j[0] + 2
+                landing_col = j[1] + 2
+                if 8 > landing_row >= 0 and 8 > landing_col >= 0:  # CHECK BOUNDARIES
+                    landing_check = self.find_piece(landing_row, landing_col)  # CHECK EMPTY
+                    if not landing_check:
+                        check_piece = self.find_piece(landing_row + 1, landing_col + 1)
+                        if check_piece:
+                            piece.double_capture_moves.append((landing_row, landing_col))
 
     def draw_dragging_piece(self):
         if self.selected_piece:
@@ -356,12 +379,12 @@ class Board:
                 piece.row = target_row
                 piece.col = target_col
 
-                # King if end of board
                 if target_row == 0:
                     piece.is_king = True
-
-                # REMOVE PIECES
-                self.remove_double_pieces(piece, piece_start)
+                if piece.is_king:
+                    self.remove_double_pieces_king(piece, piece_start)
+                else:
+                    self.remove_double_pieces(piece, piece_start)
 
                 self.selected_piece = None
 
@@ -417,6 +440,7 @@ class Board:
                         self.pieces.remove(remove_piece1)
                         self.pieces.remove(remove_piece2)
                         self.player_score += 2
+                        self.player_turn = False
         if piece.col == piece_start[1]:
             check_right_landing = self.find_piece(piece_start[0] - 2, piece_start[1] + 2)
             if piece_start[1] + 2 <= 7:
@@ -427,9 +451,96 @@ class Board:
                         self.pieces.remove(remove_piece1)
                         self.pieces.remove(remove_piece2)
                         self.player_score += 2
+                        self.player_turn = False
         if piece.col - 4 == piece_start[1]:
             remove_piece1 = self.find_piece(piece.row + 1, piece.col - 1)
             remove_piece2 = self.find_piece(piece_start[0] - 1, piece_start[1] + 1)
+            if remove_piece1 and remove_piece2:
+                self.pieces.remove(remove_piece1)
+                self.pieces.remove(remove_piece2)
+                self.player_score += 2
+                self.player_turn = False
+
+    def remove_double_pieces_king(self, piece, piece_start):
+        # Left straight capture
+        if piece.col + 4 == piece_start[1]:
+            remove_piece1 = self.find_piece(piece.row + 1, piece.col + 1)
+            remove_piece2 = self.find_piece(piece_start[0] - 1, piece_start[1] - 1)
+            if remove_piece1 and remove_piece2:
+                self.pieces.remove(remove_piece1)
+                self.pieces.remove(remove_piece2)
+                self.player_score += 2
+                self.player_turn = False
+        # Left-right zigzag capture
+        if piece.col == piece_start[1]:
+            check_left_landing = self.find_piece(piece_start[0] - 2, piece_start[1] - 2)
+            if piece_start[1] - 2 >= 0:
+                if not check_left_landing:
+                    remove_piece1 = self.find_piece(piece.row + 1, piece.col - 1)
+                    remove_piece2 = self.find_piece(piece_start[0] - 1, piece_start[1] - 1)
+                    if remove_piece1 and remove_piece2:
+                        self.pieces.remove(remove_piece1)
+                        self.pieces.remove(remove_piece2)
+                        self.player_score += 2
+                        self.player_turn = False
+        # Right-left zigzag capture
+        if piece.col == piece_start[1]:
+            check_right_landing = self.find_piece(piece_start[0] - 2, piece_start[1] + 2)
+            if piece_start[1] + 2 <= 7:
+                if not check_right_landing:
+                    remove_piece1 = self.find_piece(piece.row + 1, piece.col + 1)
+                    remove_piece2 = self.find_piece(piece_start[0] - 1, piece_start[1] + 1)
+                    if remove_piece1 and remove_piece2:
+                        self.pieces.remove(remove_piece1)
+                        self.pieces.remove(remove_piece2)
+                        self.player_score += 2
+                        self.player_turn = False
+        # Right straight capture
+        if piece.col - 4 == piece_start[1]:
+            remove_piece1 = self.find_piece(piece.row + 1, piece.col - 1)
+            remove_piece2 = self.find_piece(piece_start[0] - 1, piece_start[1] + 1)
+            if remove_piece1 and remove_piece2:
+                self.pieces.remove(remove_piece1)
+                self.pieces.remove(remove_piece2)
+                self.player_score += 2
+                self.player_turn = False
+        # Bottom left straight capture
+        if piece.col + 4 == piece_start[1]:
+            remove_piece1 = self.find_piece(piece.row - 1, piece.col + 1)
+            remove_piece2 = self.find_piece(piece_start[0] + 1, piece_start[1] - 1)
+            if remove_piece1 and remove_piece2:
+                self.pieces.remove(remove_piece1)
+                self.pieces.remove(remove_piece2)
+                self.player_score += 2
+                self.player_turn = False
+        # Bottom left-right zigzag capture
+        if piece.col == piece_start[1]:
+            check_left_landing = self.find_piece(piece_start[0] - 2, piece_start[1] - 2)
+            if piece_start[1] - 2 >= 0:
+                if not check_left_landing:
+                    remove_piece1 = self.find_piece(piece.row - 1, piece.col - 1)
+                    remove_piece2 = self.find_piece(piece_start[0] + 1, piece_start[1] - 1)
+                    if remove_piece1 and remove_piece2:
+                        self.pieces.remove(remove_piece1)
+                        self.pieces.remove(remove_piece2)
+                        self.player_score += 2
+                        self.player_turn = False
+        # Bottom right-left zigzag capture
+        if piece.col == piece_start[1]:
+            check_right_landing = self.find_piece(piece_start[0] - 2, piece_start[1] + 2)
+            if piece_start[1] + 2 <= 7:
+                if not check_right_landing:
+                    remove_piece1 = self.find_piece(piece.row - 1, piece.col + 1)
+                    remove_piece2 = self.find_piece(piece_start[0] + 1, piece_start[1] + 1)
+                    if remove_piece1 and remove_piece2:
+                        self.pieces.remove(remove_piece1)
+                        self.pieces.remove(remove_piece2)
+                        self.player_score += 2
+                        self.player_turn = False
+        # Right straight capture
+        if piece.col - 4 == piece_start[1]:
+            remove_piece1 = self.find_piece(piece.row - 1, piece.col - 1)
+            remove_piece2 = self.find_piece(piece_start[0] + 1, piece_start[1] + 1)
             if remove_piece1 and remove_piece2:
                 self.pieces.remove(remove_piece1)
                 self.pieces.remove(remove_piece2)

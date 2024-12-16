@@ -23,6 +23,8 @@ class Board:
             Piece(self.window, 1, 3, False, False),
             Piece(self.window, 1, 5, False, False),
             Piece(self.window, 1, 7, False, False),
+            # Piece(self.window, 2, 6, False, False),
+            Piece(self.window, 2, 2, False, False),
             # Player
             Piece(self.window, 4, 4, True, False),
         ]
@@ -189,20 +191,16 @@ class Board:
                             and self.find_piece(landing_row, landing_col) is None
                         ):
                             piece.capture_moves.append((landing_row, landing_col))  # Add to capture moves
-                            print(f'Capture moves: {piece.capture_moves}')
         self.check_double_captures(piece)
 
     def check_double_captures(self, piece):
         if piece.capture_moves:
-            # print(f'capture_moves is not empty: {piece.capture_moves}')
             #  LANDING SQUARE FROM THE FIRST CAPTURE BRANCHES INTO 2 SQUARES
             #  POTENTIALLY CONTAINING OPPONENT PIECES
-            # print(f'Potential double capture moves before: {piece.potential_double_capture_moves}')
             piece.potential_double_capture_moves.extend([
                 (piece.capture_moves[0][0] - 1, piece.capture_moves[0][1] - 1),  # Top left
                 (piece.capture_moves[0][0] - 1, piece.capture_moves[0][1] + 1)  # Top right
             ])
-
             if piece.is_king:
                 piece.potential_double_capture_moves.extend([
                     (piece.capture_moves[0][0] - 1, piece.capture_moves[0][1] - 1),  # Top left
@@ -216,8 +214,6 @@ class Board:
                 (piece.capture_moves[1][0] - 1, piece.capture_moves[1][1] - 1),  # Top left
                 (piece.capture_moves[1][0] - 1, piece.capture_moves[1][1] + 1)  # Top right
             ])
-            # print(f'capture_moves > 1: {piece.capture_moves}')
-
             if piece.is_king:
                 piece.potential_double_capture_moves.extend([
                     (piece.capture_moves[1][0] - 1, piece.capture_moves[1][1] - 1),  # Top left
@@ -225,19 +221,15 @@ class Board:
                     (piece.capture_moves[1][0] + 1, piece.capture_moves[1][1] - 1),  # Bottom left
                     (piece.capture_moves[1][0] + 1, piece.capture_moves[1][1] + 1)  # Bottom right
                 ])
-        # print(f'Potential double capture moves after: {piece.potential_double_capture_moves}')
-        #  CHECK BOUNDARIES
-        # print(f'Potential double capture moves: {piece.potential_double_capture_moves}')
         piece.double_capture_targets = [
             i for i in piece.potential_double_capture_moves if all(9 > j > 0 for j in i)
         ]
-        print(f'Double capture targets: {piece.double_capture_targets}')
         for i, j in enumerate(piece.double_capture_targets):
             enemy_piece = self.find_piece(j[0], j[1])
             if enemy_piece and not enemy_piece.is_player:  # Check if squares contain an opponent piece
                 # SAVE SECOND ENEMY PIECE LOCATION
                 piece.double_capture_pieces.append((enemy_piece.row, enemy_piece.col))
-                # print(f'Double capture pieces: {piece.double_capture_pieces}')
+                print(f'Double capture pieces: {piece.double_capture_pieces}')
         for i, j in enumerate(piece.capture_moves):
             # CALCULATE LEFT LANDING SQUARE
             landing_row = j[0] - 2
@@ -246,8 +238,6 @@ class Board:
                 landing_check = self.find_piece(landing_row, landing_col)  # CHECK EMPTY
                 if not landing_check:
                     piece.double_capture_moves.append((landing_row, landing_col))
-                    # print(f'Left double capture move found at: ({landing_row}, {landing_col})')
-                    # print('---------------')
 
             # CALCULATE RIGHT LANDING SQUARE
             landing_row = j[0] - 2
@@ -256,8 +246,6 @@ class Board:
                 landing_check = self.find_piece(landing_row, landing_col)  # CHECK EMPTY
                 if not landing_check:
                     piece.double_capture_moves.append((landing_row, landing_col))
-                    # print(f'Right double capture move found at: ({landing_row}, {landing_col})')
-        print(f'Double capture moves: {piece.double_capture_moves}')
 
     def draw_dragging_piece(self):
         if self.selected_piece:
@@ -343,49 +331,53 @@ class Board:
             # INITIATE DOUBLE CAPTURE MOVE
             elif (target_row, target_col) in piece.double_capture_moves:
 
+                # Get the starting position
+                piece_start = (piece.row, piece.col)
+
                 # Update attributes to move the piece object
                 piece.row = target_row
                 piece.col = target_col
+                print(f'Piece coordinates after move: ({piece.row}, {piece.col})')
+                print(f'Double capture pieces after move: {piece.double_capture_pieces}')
 
                 # King if end of board
                 if target_row == 0:
                     piece.is_king = True
 
-                if piece.double_capture_pieces:  # Ensure list is not empty
-                    for i, capture_piece in enumerate(piece.double_capture_pieces):
-                        print(f'Double capture pieces: {piece.double_capture_pieces[i]}')
-                        if piece.col + 1 == capture_piece[1]:
-                            print('Double capture piece found right of landing square!')
-                            remove_piece = self.find_piece(capture_piece[i], capture_piece[1])
-                            self.pieces.remove(remove_piece)
-                            print(f'Double capture piece removed: ({remove_piece.row}, {remove_piece.col}) \n')
-                            self.player_score += 1
-                            self.selected_piece = None
-                            piece.double_capture_pieces.clear()
-                            # self.player_turn = False
-                            break
-                        elif piece.col - 1 == capture_piece[1]:
-                            print('Double capture piece found left of landing square!')
-                            remove_piece = self.find_piece(capture_piece[i], capture_piece[1])
-                            print(f'Double capture piece removed via 2nd block: '
-                                  f'({remove_piece.row}, {remove_piece.col}) \n')
-                            self.pieces.remove(remove_piece)
-                            self.player_score += 1
-                            self.selected_piece = None
-                            piece.double_capture_pieces.clear()
-                            # self.player_turn = False
-                            break
-                        else:
-                            self.selected_piece = None
-                            print('Unable to find double capture piece!')
-                            piece.double_capture_pieces.clear()
-                            break
-            else:
-                self.selected_piece = None
+                # REMOVE PIECES
+                if piece.col + 4 == piece_start[1]:
+                    remove_piece = self.find_piece(piece.row + 1, piece.col + 1)
+                    self.pieces.remove(remove_piece)
+                    remove_piece = self.find_piece(piece_start[0] - 1, piece_start[1] - 1)
+                    self.pieces.remove(remove_piece)
+                    self.player_score += 2
+                if piece.col == piece_start[1]:
+                    check_left_landing = self.find_piece(piece_start[0] - 2, piece_start[1] - 2)
+                    if not check_left_landing:
+                        remove_piece = self.find_piece(piece.row + 1, piece.col - 1)
+                        self.pieces.remove(remove_piece)
+                        remove_piece = self.find_piece(piece_start[0] - 1, piece_start[1] - 1)
+                        self.pieces.remove(remove_piece)
+                        self.player_score += 2
+                if piece.col == piece_start[1]:
+                    check_right_landing = self.find_piece(piece_start[0] - 2, piece_start[1] + 2)
+                    if not check_right_landing:
+                        remove_piece = self.find_piece(piece.row + 1, piece.col + 1)
+                        self.pieces.remove(remove_piece)
+                        remove_piece = self.find_piece(piece_start[0] - 1, piece_start[1] + 1)
+                        self.pieces.remove(remove_piece)
+                        self.player_score += 2
+                if piece.col - 4 == piece_start[1]:
+                    remove_piece = self.find_piece(piece.row + 1, piece.col - 1)
+                    self.pieces.remove(remove_piece)
+                    remove_piece = self.find_piece(piece_start[0] - 1, piece_start[1] + 1)
+                    self.pieces.remove(remove_piece)
+                    self.player_score += 2
+                piece.double_capture_pieces.clear()
                 piece.regular_moves.clear()
                 piece.capture_moves.clear()
                 piece.capture_pieces.clear()
                 piece.double_capture_moves.clear()
                 piece.double_capture_targets.clear()
                 piece.potential_double_capture_moves.clear()
-                piece.double_capture_pieces.clear()
+                self.selected_piece = None

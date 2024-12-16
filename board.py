@@ -21,10 +21,8 @@ class Board:
             Piece(self.window, 3, 5, False, False),
             Piece(self.window, 1, 1, False, False),
             Piece(self.window, 1, 3, False, False),
-            Piece(self.window, 1, 5, False, False),
+            # Piece(self.window, 1, 5, False, False),
             Piece(self.window, 1, 7, False, False),
-            # Piece(self.window, 2, 6, False, False),
-            Piece(self.window, 2, 2, False, False),
             # Player
             Piece(self.window, 4, 4, True, False),
         ]
@@ -230,6 +228,7 @@ class Board:
                 # SAVE SECOND ENEMY PIECE LOCATION
                 piece.double_capture_pieces.append((enemy_piece.row, enemy_piece.col))
                 print(f'Double capture pieces: {piece.double_capture_pieces}')
+        print(f'Capture moves: {piece.capture_moves}')
         for i, j in enumerate(piece.capture_moves):
             # CALCULATE LEFT LANDING SQUARE
             landing_row = j[0] - 2
@@ -237,7 +236,9 @@ class Board:
             if 6 > landing_row >= 0 and 9 > landing_col >= 0:  # CHECK BOUNDARIES
                 landing_check = self.find_piece(landing_row, landing_col)  # CHECK EMPTY
                 if not landing_check:
-                    piece.double_capture_moves.append((landing_row, landing_col))
+                    check_piece = self.find_piece(landing_row + 1, landing_col + 1)
+                    if check_piece:
+                        piece.double_capture_moves.append((landing_row, landing_col))
 
             # CALCULATE RIGHT LANDING SQUARE
             landing_row = j[0] - 2
@@ -245,7 +246,9 @@ class Board:
             if 6 > landing_row >= 0 and 9 > landing_col >= 0:  # CHECK BOUNDARIES
                 landing_check = self.find_piece(landing_row, landing_col)  # CHECK EMPTY
                 if not landing_check:
-                    piece.double_capture_moves.append((landing_row, landing_col))
+                    check_piece = self.find_piece(landing_row + 1, landing_col - 1)
+                    if check_piece:
+                        piece.double_capture_moves.append((landing_row, landing_col))
 
     def draw_dragging_piece(self):
         if self.selected_piece:
@@ -355,18 +358,22 @@ class Board:
                     check_left_landing = self.find_piece(piece_start[0] - 2, piece_start[1] - 2)
                     if not check_left_landing:
                         remove_piece = self.find_piece(piece.row + 1, piece.col - 1)
-                        self.pieces.remove(remove_piece)
-                        remove_piece = self.find_piece(piece_start[0] - 1, piece_start[1] - 1)
-                        self.pieces.remove(remove_piece)
-                        self.player_score += 2
+                        if remove_piece:
+                            self.pieces.remove(remove_piece)
+                            remove_piece = self.find_piece(piece_start[0] - 1, piece_start[1] - 1)
+                            if remove_piece:
+                                self.pieces.remove(remove_piece)
+                                self.player_score += 2
                 if piece.col == piece_start[1]:
                     check_right_landing = self.find_piece(piece_start[0] - 2, piece_start[1] + 2)
                     if not check_right_landing:
                         remove_piece = self.find_piece(piece.row + 1, piece.col + 1)
-                        self.pieces.remove(remove_piece)
-                        remove_piece = self.find_piece(piece_start[0] - 1, piece_start[1] + 1)
-                        self.pieces.remove(remove_piece)
-                        self.player_score += 2
+                        if remove_piece:
+                            self.pieces.remove(remove_piece)
+                            remove_piece = self.find_piece(piece_start[0] - 1, piece_start[1] + 1)
+                            if remove_piece:
+                                self.pieces.remove(remove_piece)
+                                self.player_score += 2
                 if piece.col - 4 == piece_start[1]:
                     remove_piece = self.find_piece(piece.row + 1, piece.col - 1)
                     self.pieces.remove(remove_piece)
@@ -380,4 +387,4 @@ class Board:
                 piece.double_capture_moves.clear()
                 piece.double_capture_targets.clear()
                 piece.potential_double_capture_moves.clear()
-                self.selected_piece = None
+        self.selected_piece = None

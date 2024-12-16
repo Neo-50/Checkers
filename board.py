@@ -341,31 +341,10 @@ class Board:
                 if target_row == 0:
                     piece.is_king = True
 
-                self.selected_piece = None
-
                 # Remove enemy piece
-                if piece.capture_moves and piece.capture_pieces:  # Ensure lists are not empty
+                self.remove_single_piece(piece)
 
-                    for i, capture_piece in enumerate(piece.capture_pieces):
-                        if piece.col - 1 == capture_piece[1]:
-                            remove_piece = self.find_piece(capture_piece[0], capture_piece[1])
-                            self.pieces.remove(remove_piece)
-                            print(f'Left piece removed: ({remove_piece.row}, {remove_piece.col})')
-                            self.player_score += 1
-                            self.player_turn = False
-                            break
-                        elif piece.col + 1 == capture_piece[1]:
-                            remove_piece = self.find_piece(capture_piece[0], capture_piece[1])
-                            self.pieces.remove(remove_piece)
-                            print(f'Right piece removed: ({remove_piece.row}, {remove_piece.col})')
-                            self.player_score += 1
-                            self.player_turn = False
-                            break
-                    else:
-                        print('Unable to find capture piece!')
-                        print(piece.capture_pieces)
-                else:
-                    print('Error: Capture moves or capture pieces are empty')
+                self.selected_piece = None
 
             # INITIATE DOUBLE CAPTURE MOVE
             elif (target_row, target_col) in piece.double_capture_moves:
@@ -382,40 +361,10 @@ class Board:
                     piece.is_king = True
 
                 # REMOVE PIECES
-                if piece.col + 4 == piece_start[1]:
-                    remove_piece = self.find_piece(piece.row + 1, piece.col + 1)
-                    self.pieces.remove(remove_piece)
-                    remove_piece = self.find_piece(piece_start[0] - 1, piece_start[1] - 1)
-                    self.pieces.remove(remove_piece)
-                    self.player_score += 2
-                    self.player_turn = False
-                if piece.col == piece_start[1]:
-                    check_left_landing = self.find_piece(piece_start[0] - 2, piece_start[1] - 2)
-                    if not check_left_landing:
-                        remove_piece = self.find_piece(piece.row + 1, piece.col - 1)
-                        if remove_piece:
-                            self.pieces.remove(remove_piece)
-                            remove_piece = self.find_piece(piece_start[0] - 1, piece_start[1] - 1)
-                            if remove_piece:
-                                self.pieces.remove(remove_piece)
-                                self.player_score += 2
-                if piece.col == piece_start[1]:
-                    check_right_landing = self.find_piece(piece_start[0] - 2, piece_start[1] + 2)
-                    if not check_right_landing:
-                        remove_piece = self.find_piece(piece.row + 1, piece.col + 1)
-                        if remove_piece:
-                            self.pieces.remove(remove_piece)
-                            remove_piece = self.find_piece(piece_start[0] - 1, piece_start[1] + 1)
-                            if remove_piece:
-                                self.pieces.remove(remove_piece)
-                                self.player_score += 2
-                if piece.col - 4 == piece_start[1]:
-                    remove_piece = self.find_piece(piece.row + 1, piece.col - 1)
-                    self.pieces.remove(remove_piece)
-                    remove_piece = self.find_piece(piece_start[0] - 1, piece_start[1] + 1)
-                    self.pieces.remove(remove_piece)
-                    self.player_score += 2
-                    self.player_turn = False
+                self.remove_double_pieces(piece, piece_start)
+
+                self.selected_piece = None
+
             piece.double_capture_pieces.clear()
             piece.regular_moves.clear()
             piece.capture_moves.clear()
@@ -424,6 +373,68 @@ class Board:
             piece.double_capture_targets.clear()
             piece.potential_double_capture_moves.clear()
         self.selected_piece = None
+
+    def remove_single_piece(self, piece):
+        if piece.capture_moves and piece.capture_pieces:  # Ensure lists are not empty
+
+            for i, capture_piece in enumerate(piece.capture_pieces):
+                if piece.col - 1 == capture_piece[1]:
+                    remove_piece = self.find_piece(capture_piece[0], capture_piece[1])
+                    self.pieces.remove(remove_piece)
+                    print(f'Left piece removed: ({remove_piece.row}, {remove_piece.col})')
+                    self.player_score += 1
+                    self.player_turn = False
+                    break
+                elif piece.col + 1 == capture_piece[1]:
+                    remove_piece = self.find_piece(capture_piece[0], capture_piece[1])
+                    self.pieces.remove(remove_piece)
+                    print(f'Right piece removed: ({remove_piece.row}, {remove_piece.col})')
+                    self.player_score += 1
+                    self.player_turn = False
+                    break
+            else:
+                print('Unable to find capture piece!')
+                print(piece.capture_pieces)
+        else:
+            print('Error: Capture moves or capture pieces are empty')
+
+    def remove_double_pieces(self, piece, piece_start):
+        if piece.col + 4 == piece_start[1]:
+            remove_piece1 = self.find_piece(piece.row + 1, piece.col + 1)
+            remove_piece2 = self.find_piece(piece_start[0] - 1, piece_start[1] - 1)
+            if remove_piece1 and remove_piece2:
+                self.pieces.remove(remove_piece1)
+                self.pieces.remove(remove_piece2)
+                self.player_score += 2
+                self.player_turn = False
+        if piece.col == piece_start[1]:
+            check_left_landing = self.find_piece(piece_start[0] - 2, piece_start[1] - 2)
+            if piece_start[1] - 2 >= 0:
+                if not check_left_landing:
+                    remove_piece1 = self.find_piece(piece.row + 1, piece.col - 1)
+                    remove_piece2 = self.find_piece(piece_start[0] - 1, piece_start[1] - 1)
+                    if remove_piece1 and remove_piece2:
+                        self.pieces.remove(remove_piece1)
+                        self.pieces.remove(remove_piece2)
+                        self.player_score += 2
+        if piece.col == piece_start[1]:
+            check_right_landing = self.find_piece(piece_start[0] - 2, piece_start[1] + 2)
+            if piece_start[1] + 2 <= 7:
+                if not check_right_landing:
+                    remove_piece1 = self.find_piece(piece.row + 1, piece.col + 1)
+                    remove_piece2 = self.find_piece(piece_start[0] - 1, piece_start[1] + 1)
+                    if remove_piece1 and remove_piece2:
+                        self.pieces.remove(remove_piece1)
+                        self.pieces.remove(remove_piece2)
+                        self.player_score += 2
+        if piece.col - 4 == piece_start[1]:
+            remove_piece1 = self.find_piece(piece.row + 1, piece.col - 1)
+            remove_piece2 = self.find_piece(piece_start[0] - 1, piece_start[1] + 1)
+            if remove_piece1 and remove_piece2:
+                self.pieces.remove(remove_piece1)
+                self.pieces.remove(remove_piece2)
+                self.player_score += 2
+                self.player_turn = False
 
     def ai_move(self):
         self.ai_regular_moves.clear()

@@ -4,8 +4,9 @@ from constants import *
 from vector import Vector
 from cell import Cell
 
+
 class Piece:
-    def __init__(self, window, position: Cell, is_player: bool = True, on_mousedown = None):
+    def __init__(self, window, position: Cell, is_player: bool = True, on_mousedown=None):
         self.window = window
         self.position = position
         self.is_player = is_player
@@ -17,7 +18,7 @@ class Piece:
         return self.position == other.position
 
     def draw(self):
-        if (not self.hidden):
+        if not self.hidden:
             pygame.draw.circle(self.window, self.get_color(), self.get_absolute_position().tuple(), PIECE_RADIUS)
     
     def hide(self):
@@ -30,8 +31,8 @@ class Piece:
         self.position = position
 
     def handle_event(self, event):
-        if (event.type == pygame.MOUSEBUTTONDOWN and self.on_mousedown):
-            if (self.is_player and self.contains_point(Vector(event.pos[0], event.pos[1]))):
+        if event.type == pygame.MOUSEBUTTONDOWN and self.on_mousedown:
+            if self.is_player and self.contains_point(Vector(event.pos[0], event.pos[1])):
                 self.on_mousedown(self, event)
 
     def contains_point(self, point):
@@ -47,14 +48,14 @@ class Piece:
         self.is_king = True
 
     def get_adjacent_cells(self):
-        y_dir = 1 if self.is_player else -1 # Invert y if we're a computer piece
+        y_dir = 1 if self.is_player else -1  # Invert y if we're a computer piece
         adjacents = [
-            Cell(self.position.row - 1, self.position.col - y_dir),
-            Cell(self.position.row - 1, self.position.col + y_dir)
+            Cell(self.position.row - y_dir, self.position.col - 1),
+            Cell(self.position.row - y_dir, self.position.col + 1)
         ]
         if self.is_king:
-            adjacents.append(Cell(self.position.row + 1, self.position.col - y_dir))
-            adjacents.append(Cell(self.position.row + 1, self.position.col + y_dir))
+            adjacents.append(Cell(self.position.row + y_dir, self.position.col - 1))
+            adjacents.append(Cell(self.position.row + y_dir, self.position.col + 1))
         return adjacents
 
     def get_color(self):

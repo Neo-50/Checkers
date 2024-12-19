@@ -11,16 +11,17 @@ from scoreboard import Scoreboard
 
 PIECE_POSITIONS = {
     'computer': [
-        Cell(0,0), Cell(0,2), Cell(0,4), Cell(0,6),
-        Cell(1,1), Cell(1,3), Cell(1,5), Cell(1,7),
-        Cell(2,0), Cell(2,2), Cell(2,4), Cell(2,6)
+        Cell(0, 0), Cell(0, 2), Cell(0, 4), Cell(0, 6),
+        Cell(1, 1), Cell(1, 3), Cell(1, 5), Cell(1, 7),
+        Cell(2, 0), Cell(2, 2), Cell(2, 4), Cell(2, 6)
     ],
     'player': [
-        Cell(5,1), Cell(5,3), Cell(5,5), Cell(5,7),
-        Cell(6,0), Cell(6,2), Cell(6,4), Cell(6,6),
-        Cell(7,1), Cell(7,3), Cell(7,5), Cell(7,7)
+        Cell(5, 1), Cell(5, 3), Cell(5, 5), Cell(5, 7),
+        Cell(6, 0), Cell(6, 2), Cell(6, 4), Cell(6, 6),
+        Cell(7, 1), Cell(7, 3), Cell(7, 5), Cell(7, 7)
     ]
 }
+
 
 class Board:
     def __init__(self, window):
@@ -73,7 +74,8 @@ class Board:
                 return piece
         return None
 
-    def cell_is_in_board(self, cell):
+    @staticmethod
+    def cell_is_in_board(cell):
         return 0 <= cell.row < NUM_ROWS and 0 <= cell.col < NUM_COLS
 
     def draw_selected_piece(self):
@@ -101,7 +103,8 @@ class Board:
             self.selected_piece.show()
 
             move = next((obj for obj in self.candidate_moves if obj.end == cell), None)
-            if not move: return
+            if not move:
+                return
 
             move.piece.set_position(move.end)
 
@@ -119,10 +122,11 @@ class Board:
                 adjacent_piece = self.find_piece(adjacent)
                 if adjacent_piece:
                     if not adjacent_piece.is_player:
-                        end = Cell(2 * adjacent.row - piece.position.row, 2 * adjacent.col - piece.position.col) # Project 1 more cell
+                        end = Cell(2 * adjacent.row - piece.position.row,
+                                   2 * adjacent.col - piece.position.col)  # Project 1 more cell
                         if (
-                            self.cell_is_in_board(end) and
-                            self.find_piece(end) is None
+                                self.cell_is_in_board(end) and
+                                self.find_piece(end) is None
                         ):
                             self.candidate_moves.append(Move(piece, end, adjacent_piece))
                 else:
@@ -132,17 +136,28 @@ class Board:
         capture_moves = []
         regular_moves = []
 
+        if self.selected_piece:
+            print(f'Selected piece: {self.selected_piece}')
+        # cell_list = piece.get_adjacent_cells()
+        # cell1 = cell_list[0]
+        # cell2 = cell_list[1]
+        # print(f'Cell1 coordinates: ({cell1.row}, {cell1.col})')
+        # print(f'Cell1 coordinates: ({cell2.row}, {cell2.col})')
+
+
         for piece in self.pieces:
-            if piece.is_player: continue
+            if piece.is_player:
+                continue
             for adjacent in piece.get_adjacent_cells():
                 if self.cell_is_in_board(adjacent):
                     adjacent_piece = self.find_piece(adjacent)
                     if adjacent_piece:
                         if adjacent_piece.is_player:
-                            end = Cell(2 * adjacent.row - piece.position.row, 2 * adjacent.col - piece.position.col) # Project 1 more cell
+                            end = Cell(2 * adjacent.row - piece.position.row,
+                                       2 * adjacent.col - piece.position.col)  # Project 1 more cell
                             if (
-                                self.cell_is_in_board(end) and
-                                not self.find_piece(end)
+                                    self.cell_is_in_board(end) and
+                                    not self.find_piece(end)
                             ):
                                 capture_moves.append(Move(piece, end, adjacent_piece))
                     else:

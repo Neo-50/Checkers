@@ -63,6 +63,8 @@ class Board:
         self.grid.handle_event(event)
         for piece in self.pieces:
             piece.handle_event(event)
+        if event.type == pygame.MOUSEBUTTONUP:
+            self.selected_piece = None
 
     def draw_pieces(self):
         for piece in self.pieces:
@@ -131,19 +133,11 @@ class Board:
                             self.candidate_moves.append(Move(piece, end, adjacent_piece))
                 else:
                     self.candidate_moves.append(Move(piece, adjacent))
+                    self.grid.highlight_cell(adjacent)
 
     def ai_move(self):
         capture_moves = []
         regular_moves = []
-
-        if self.selected_piece:
-            print(f'Selected piece: {self.selected_piece}')
-        # cell_list = piece.get_adjacent_cells()
-        # cell1 = cell_list[0]
-        # cell2 = cell_list[1]
-        # print(f'Cell1 coordinates: ({cell1.row}, {cell1.col})')
-        # print(f'Cell1 coordinates: ({cell2.row}, {cell2.col})')
-
 
         for piece in self.pieces:
             if piece.is_player:

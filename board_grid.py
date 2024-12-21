@@ -42,7 +42,8 @@ class BoardGrid:
         self.highlighted_cells = []
 
     def handle_event(self, event):
-        if (event.type == pygame.MOUSEBUTTONUP):
+        if event.type == pygame.MOUSEBUTTONUP:
+            self.clear_highlighted_cells()
             x, y = event.pos
             point = Vector(x, y)
             if (self.point_in_grid(point)):
@@ -58,3 +59,4 @@ class BoardGrid:
             self.origin.x <= point.x <= (self.origin.x + BOARD_WIDTH)
             and self.origin.y <= point.y <= (self.origin.y + BOARD_HEIGHT)
         )
+    

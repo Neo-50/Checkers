@@ -261,7 +261,7 @@ class Board:
         ]
         for i, j in enumerate(piece.double_capture_targets):
             enemy_piece = self.find_piece(j[0], j[1])
-            if enemy_piece and not enemy_piece.is_player:  # Check if squares contain an opponent piece
+            if enemy_piece and not enemy_piece.is_player:
                 # SAVE SECOND ENEMY PIECE LOCATION
                 piece.double_capture_pieces.append((enemy_piece.row, enemy_piece.col))
                 print(f'Double capture pieces: {piece.double_capture_pieces}')
@@ -277,9 +277,8 @@ class Board:
                 landing_check = self.find_piece(landing_row, landing_col)  # CHECK EMPTY
                 if not landing_check:
                     check_piece = self.find_piece(landing_row + 1, landing_col + 1)
-                    if check_piece:
+                    if check_piece and not check_piece.is_player:
                         piece.double_capture_moves.append((landing_row, landing_col))
-
             # CALCULATE RIGHT LANDING SQUARE
             landing_row = j[0] - 2
             landing_col = j[1] + 2
@@ -287,7 +286,7 @@ class Board:
                 landing_check = self.find_piece(landing_row, landing_col)  # CHECK EMPTY
                 if not landing_check:
                     check_piece = self.find_piece(landing_row + 1, landing_col - 1)
-                    if check_piece:
+                    if check_piece and not check_piece.is_player:
                         piece.double_capture_moves.append((landing_row, landing_col))
             if piece.is_king:
                 # CALCULATE BOTTOM LEFT LANDING SQUARE
@@ -297,7 +296,7 @@ class Board:
                     landing_check = self.find_piece(landing_row, landing_col)  # CHECK EMPTY
                     if not landing_check:
                         check_piece = self.find_piece(landing_row + 1, landing_col - 1)
-                        if check_piece:
+                        if check_piece and not check_piece.is_player:
                             piece.double_capture_moves.append((landing_row, landing_col))
                 # CALCULATE BOTTOM RIGHT LANDING SQUARE
                 landing_row = j[0] + 2
@@ -306,7 +305,7 @@ class Board:
                     landing_check = self.find_piece(landing_row, landing_col)  # CHECK EMPTY
                     if not landing_check:
                         check_piece = self.find_piece(landing_row + 1, landing_col + 1)
-                        if check_piece:
+                        if check_piece and not check_piece.is_player:
                             piece.double_capture_moves.append((landing_row, landing_col))
 
     def draw_dragging_piece(self):
@@ -399,7 +398,6 @@ class Board:
 
     def remove_single_piece(self, piece):
         if piece.capture_moves and piece.capture_pieces:  # Ensure lists are not empty
-
             for i, capture_piece in enumerate(piece.capture_pieces):
                 if piece.col - 1 == capture_piece[1]:
                     remove_piece = self.find_piece(capture_piece[0], capture_piece[1])
@@ -422,6 +420,7 @@ class Board:
             print('Error: Capture moves or capture pieces are empty')
 
     def remove_double_pieces(self, piece, piece_start):
+        # Left straight capture
         if piece.col + 4 == piece_start[1]:
             remove_piece1 = self.find_piece(piece.row + 1, piece.col + 1)
             remove_piece2 = self.find_piece(piece_start[0] - 1, piece_start[1] - 1)
@@ -430,6 +429,7 @@ class Board:
                 self.pieces.remove(remove_piece2)
                 self.player_score += 2
                 self.player_turn = False
+        # Left-right zigzag capture
         if piece.col == piece_start[1]:
             check_left_landing = self.find_piece(piece_start[0] - 2, piece_start[1] - 2)
             if piece_start[1] - 2 >= 0:
@@ -441,6 +441,7 @@ class Board:
                         self.pieces.remove(remove_piece2)
                         self.player_score += 2
                         self.player_turn = False
+        # Right-left zigzag capture
         if piece.col == piece_start[1]:
             check_right_landing = self.find_piece(piece_start[0] - 2, piece_start[1] + 2)
             if piece_start[1] + 2 <= 7:
@@ -452,6 +453,7 @@ class Board:
                         self.pieces.remove(remove_piece2)
                         self.player_score += 2
                         self.player_turn = False
+        # Right straight capture
         if piece.col - 4 == piece_start[1]:
             remove_piece1 = self.find_piece(piece.row + 1, piece.col - 1)
             remove_piece2 = self.find_piece(piece_start[0] - 1, piece_start[1] + 1)

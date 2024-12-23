@@ -8,4 +8,4 @@ class Move:
         self.captures_piece = captures_piece
 
     def is_capture(self):
-        return self.captures_piece != None
+        return self.captures_piece is not None

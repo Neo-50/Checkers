@@ -15,6 +15,10 @@ class Piece:
         self.on_mousedown = on_mousedown
 
     def __eq__(self, other):
+        if other is None:
+            print("Comparing against None")
+            return False
+        print(f"Comparing {self.position} with {other.position}")
         return self.position == other.position
 
     def draw(self):

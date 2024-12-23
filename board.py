@@ -111,6 +111,7 @@ class Board:
             move.piece.set_position(move.end)
 
             if move.is_capture():
+                print(f'Removing capture piece at: ({move.captures_piece.position.row}, {move.captures_piece.position.col})')
                 self.pieces.remove(move.captures_piece)
                 self.scoreboard.increment_player_score()
 
@@ -131,6 +132,7 @@ class Board:
                                 self.find_piece(end) is None
                         ):
                             self.candidate_moves.append(Move(piece, end, adjacent_piece))
+                            self.grid.highlight_cell(end)
                 else:
                     self.candidate_moves.append(Move(piece, adjacent))
                     self.grid.highlight_cell(adjacent)
@@ -156,8 +158,6 @@ class Board:
                                 capture_moves.append(Move(piece, end, adjacent_piece))
                     else:
                         regular_moves.append(Move(piece, adjacent))
-
-        print(f'{len(capture_moves)} captures and {len(regular_moves)} regular moves')
         if len(capture_moves) > 0:
             move = choice(capture_moves)
             self.pieces.remove(move.captures_piece)

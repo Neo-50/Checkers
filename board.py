@@ -106,18 +106,20 @@ class Board:
 
             move = next((obj for obj in self.candidate_moves if obj.end == cell), None)
             if not move:
+                self.selected_piece = None
                 return
-
-            move.piece.set_position(move.end)
-
+            if move:
+                if self.cell_is_in_board(move.end):
+                    move.piece.set_position(move.end)
+                    self.selected_piece = None
+                    self.player_turn = False
             if move.is_capture():
                 print(f'Removing capture piece at: ({move.captures_piece.position.row}, {move.captures_piece.position.col})')
-                self.pieces.remove(move.captures_piece)
+                self.pieces = [p for p in self.pieces if p is not move.captures_piece]
+                self.selected_piece = None
+                self.player_turn = False
                 self.scoreboard.increment_player_score()
-
         self.candidate_moves = []
-        self.selected_piece = None
-        self.player_turn = False
 
     def find_candidate_moves(self, piece):
         for adjacent in piece.get_adjacent_cells():
@@ -162,13 +164,13 @@ class Board:
             move = choice(capture_moves)
             self.pieces.remove(move.captures_piece)
             move.piece.set_position(move.end)
-            if move.end.col == NUM_ROWS - 1:
+            if move.end.row == NUM_ROWS - 1:
                 move.piece.promote()
             self.scoreboard.increment_computer_score()
         elif len(regular_moves) > 0:
             move = choice(regular_moves)
             move.piece.set_position(move.end)
-            if move.end.col == NUM_COLS - 1:
+            if move.end.row == NUM_ROWS - 1:
                 move.piece.promote()
         else:
             print("No valid moves for AI!")

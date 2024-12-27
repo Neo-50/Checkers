@@ -10,14 +10,9 @@ class Piece:
         self.is_player = is_player
         self.hidden = hidden
         self.is_king = False
-        self.possible_moves = []
-        self.regular_moves = []
+        self.candidate_moves = []
         self.capture_moves = []
-        self.capture_pieces = []
-        self.potential_double_capture_moves = []
-        self.double_capture_moves = []
-        self.double_capture_targets = []
-        self.double_capture_pieces = []
+        self.double_captures = []
 
     def get_color(self):
         if self.is_player:
@@ -30,6 +25,7 @@ class Piece:
                 return COLORS['ai_king']
             else:
                 return COLORS['black']
+
 
     def draw(self):
         center_x = self.col * CELL_WIDTH + CELL_WIDTH // 2

@@ -18,7 +18,7 @@ class Board:
         self.window = window
         self.pieces = [
             # Computer
-            # Piece(self.window, 3, 3, False, False),
+            Piece(self.window, 3, 3, False, False),
             Piece(self.window, 3, 5, False, False),
             Piece(self.window, 1, 1, False, False),
             Piece(self.window, 1, 3, False, False),
@@ -93,6 +93,7 @@ class Board:
                     ):
                     landing_square = Cell(end[0], end[1], adjacent_piece)
                     piece.capture_moves.append(landing_square)
+
             elif adjacent_piece and adjacent_piece.is_player:
                 print('Player piece in adjacent cell')
             elif adjacent_piece is None:
@@ -100,8 +101,6 @@ class Board:
             else:
                 print('An error occurred!')
         piece.candidate_moves = valid_moves
-        for cell in piece.candidate_moves:
-            print(f'Candidate moves: ({cell.row}, {cell.col})')
 
 
     def check_double_captures(self):
@@ -129,22 +128,26 @@ class Board:
                         ):
                         capture1 = None
                         for j in first_pieces:
-                            if j[1] == adjacent_piece.col:
-                                print(f'Found capture piece 1 at: ({j[0], j[1]}) '
-                                      f'based on ({adjacent_piece.row}, {adjacent_piece.col})')
-                                capture1 = self.find_piece(j[0], j[1])
-                                break
-                            elif j[1] + 2 == adjacent_piece.col:
-                                print(f'Found capture piece 1 at: ({j[0], j[1]}) '
-                                      f'based on ({adjacent_piece.row}, {adjacent_piece.col})')
-                                capture1 = self.find_piece(j[0], j[1])
-                                break
-                            elif j[1] - 2 == adjacent_piece.col:
-                                print(f'Found capture piece 1 at: ({j[0], j[1]}) '
-                                      f'based on ({adjacent_piece.row}, {adjacent_piece.col})')
-                                capture1 = self.find_piece(j[0], j[1])
-                                break
-                        print(f'Capture1: {capture1.row}, {capture1.col}')
+                            if adjacent_piece.row - 3 == piece.row:
+                                if j[1] == adjacent_piece.col and j[0] - 1 == piece.row:
+                                    capture1 = self.find_piece(j[0], j[1])
+                                    break
+                                elif j[1] + 2 == adjacent_piece.col and j[0] - 1 == piece.row:
+                                    capture1 = self.find_piece(j[0], j[1])
+                                    break
+                                elif j[1] - 2 == adjacent_piece.col and j[0] - 1 == piece.row:
+                                    capture1 = self.find_piece(j[0], j[1])
+                                    break
+                            elif adjacent_piece.row + 3 == piece.row:
+                                if j[1] == adjacent_piece.col and j[0] + 1 == piece.row:
+                                    capture1 = self.find_piece(j[0], j[1])
+                                    break
+                                elif j[1] + 2 == adjacent_piece.col and j[0] + 1 == piece.row:
+                                    capture1 = self.find_piece(j[0], j[1])
+                                    break
+                                elif j[1] - 2 == adjacent_piece.col and j[0] + 1 == piece.row:
+                                    capture1 = self.find_piece(j[0], j[1])
+                                    break
                         landing_square = Cell(end[0], end[1], capture1, adjacent_piece, square.origin_square)
                         piece.double_captures.append(landing_square)
 
@@ -172,13 +175,11 @@ class Board:
                 piece.hidden = False  # Make piece visible again
 
             mouse_x, mouse_y = event.pos
-
             target_col = mouse_x // CELL_WIDTH
             target_row = (mouse_y - 50) // CELL_HEIGHT
 
             cell = self.find_cell(target_row, target_col)
-            if cell:
-                print(f'Cell found at: ({cell.row}, {cell.col})')
+
             if not cell:
                 self.selected_piece = None
                 return

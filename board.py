@@ -22,6 +22,7 @@ class Board:
             Piece(self.window, 0, 0, False, False), Piece(self.window, 0, 2, False, False),
             Piece(self.window, 0, 4, False, False), Piece(self.window, 0, 6, False, False),
             Piece(self.window, 1, 1, False, False), Piece(self.window, 1, 3, False, False),
+
             Piece(self.window, 1, 5, False, False), Piece(self.window, 1, 7, False, False),
             Piece(self.window, 2, 0, False, False), Piece(self.window, 2, 2, False, False),
             Piece(self.window, 2, 4, False, False), Piece(self.window, 2, 6, False, False),

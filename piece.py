@@ -9,7 +9,7 @@ class Piece:
         self.col = col
         self.is_player = is_player
         self.hidden = hidden
-        self.is_king = False
+        self.is_king = True
         self.candidate_moves = []
         self.capture_moves = []
         self.double_captures = []
@@ -22,7 +22,7 @@ class Piece:
                 return COLORS['red']
         else:
             if self.is_king:
-                return COLORS['ai_king']
+                return COLORS['black']
             else:
                 return COLORS['black']
 

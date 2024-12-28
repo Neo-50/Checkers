@@ -18,14 +18,14 @@ class Board:
         self.window = window
         self.pieces = [
             # Computer
-            Piece(self.window, 3, 3, False, False),
+            # Piece(self.window, 3, 3, False, False),
             Piece(self.window, 3, 5, False, False),
             Piece(self.window, 1, 1, False, False),
             Piece(self.window, 1, 3, False, False),
             Piece(self.window, 1, 5, False, False),
             Piece(self.window, 1, 7, False, False),
 
-            Piece(self.window, 5, 3, False, False),
+            # Piece(self.window, 5, 3, False, False),
             Piece(self.window, 5, 5, False, False),
             Piece(self.window, 7, 1, False, False),
             Piece(self.window, 7, 3, False, False),
@@ -104,26 +104,6 @@ class Board:
             print(f'Candidate moves: ({cell.row}, {cell.col})')
 
 
-    def find_piece(self, target_row, target_col):
-        for piece in self.pieces:
-            if piece.row == target_row and piece.col == target_col:
-                return piece
-        return None
-
-
-    def find_cell(self, row, col):
-        if not self.selected_piece:
-            return
-        if self.selected_piece.candidate_moves:
-            for i in self.selected_piece.candidate_moves:
-                if i.row == row and i.col == col:
-                    return i
-        if self.selected_piece.capture_moves:
-            for i in self.selected_piece.capture_moves:
-                if i.row == row and i.col == col:
-                    return i
-
-
     def check_double_captures(self):
         if not self.selected_piece:
             return
@@ -132,21 +112,58 @@ class Board:
             #  LANDING SQUARE FROM THE FIRST CAPTURE BRANCHES INTO 2 SQUARES
             #  POTENTIALLY CONTAINING OPPONENT PIECES
             new_captures = []
+            first_pieces = []
             for square in piece.capture_moves:
-                new_captures = [i for i in self.get_adjacent_cells(square.row, square.col)
+                first_pieces.append((square.capture_piece.row, square.capture_piece.col))
+                new_captures += [i for i in self.get_adjacent_cells(square.row, square.col)
                                 if self.in_boundaries(i.row, i.col)]
             for square in new_captures:
+                # print(f'Cell attributes: ({vars(square)})')
                 adjacent_piece = self.find_piece(square.row, square.col)
                 if adjacent_piece and not adjacent_piece.is_player:
                     # Project 1 cell
-                    end = (2 * square.row - piece.row, 2 * square.col - piece.col)
+                    end = (2 * square.row - square.origin_square.row, 2 * square.col - square.origin_square.col)
                     if (
                             self.in_boundaries(end[0], end[1]) and
                             self.find_piece(end[0], end[1]) is None
                         ):
-                        landing_square = Cell(end[0], end[1], square.capture_piece, adjacent_piece)
+                        capture1 = None
+                        for j in first_pieces:
+                            if j[1] == adjacent_piece.col:
+                                print(f'Found capture piece 1 at: ({j[0], j[1]}) '
+                                      f'based on ({adjacent_piece.row}, {adjacent_piece.col})')
+                                capture1 = self.find_piece(j[0], j[1])
+                                break
+                            elif j[1] + 2 == adjacent_piece.col:
+                                print(f'Found capture piece 1 at: ({j[0], j[1]}) '
+                                      f'based on ({adjacent_piece.row}, {adjacent_piece.col})')
+                                capture1 = self.find_piece(j[0], j[1])
+                                break
+                            elif j[1] - 2 == adjacent_piece.col:
+                                print(f'Found capture piece 1 at: ({j[0], j[1]}) '
+                                      f'based on ({adjacent_piece.row}, {adjacent_piece.col})')
+                                capture1 = self.find_piece(j[0], j[1])
+                                break
+                        print(f'Capture1: {capture1.row}, {capture1.col}')
+                        landing_square = Cell(end[0], end[1], capture1, adjacent_piece, square.origin_square)
                         piece.double_captures.append(landing_square)
-                # print(f'Double capture Row: {square.row} Col: {square.col}')
+
+
+    def get_adjacent_cells(self, row, col):
+        y_dir = 1 if self.player_turn else -1  # Invert y if we're a computer piece
+        cell1 = (row - y_dir, col - 1)
+        cell2 = (row - y_dir, col + 1)
+        origin_square = Cell(row, col)
+        left_cell = Cell(cell1[0], cell1[1], None, None, origin_square)
+        right_cell = Cell(cell2[0], cell2[1], None, None, origin_square)
+        if not self.selected_piece.is_king:
+            return left_cell, right_cell
+        else:
+            cell3 = (row + y_dir, col - 1)
+            cell4 = (row + y_dir, col + 1)
+            back_left_cell = Cell(cell3[0], cell3[1],  None, None, origin_square)
+            back_right_cell = Cell(cell4[0], cell4[1],  None, None, origin_square)
+            return left_cell, right_cell, back_left_cell, back_right_cell
 
     def handle_mouseup(self, event):
         if self.selected_piece:
@@ -158,7 +175,10 @@ class Board:
 
             target_col = mouse_x // CELL_WIDTH
             target_row = (mouse_y - 50) // CELL_HEIGHT
+
             cell = self.find_cell(target_row, target_col)
+            if cell:
+                print(f'Cell found at: ({cell.row}, {cell.col})')
             if not cell:
                 self.selected_piece = None
                 return
@@ -173,6 +193,23 @@ class Board:
                 # King if end of board
                 if target_row == 0:
                     piece.is_king = True
+
+                self.selected_piece = None
+                # self.player_turn = False
+
+            # INITIATE DOUBLE CAPTURE MOVE
+            if cell in piece.double_captures:
+                print('Double capture move initiated!')
+
+                # Update attributes to move the piece object
+                piece.row = target_row
+                piece.col = target_col
+
+                if target_row == 0:
+                    piece.is_king = True
+
+                self.pieces.remove(cell.capture_piece)
+                self.pieces.remove(cell.double_capture_piece)
 
                 self.selected_piece = None
                 # self.player_turn = False
@@ -198,38 +235,35 @@ class Board:
                 self.selected_piece = None
                 # self.player_turn = False
 
-            # INITIATE DOUBLE CAPTURE MOVE
-            elif cell in piece.double_captures:
-
-                # Update attributes to move the piece object
-                piece.row = target_row
-                piece.col = target_col
-
-                if target_row == 0:
-                    piece.is_king = True
-
-                self.pieces.remove(cell.capture_piece)
-                self.pieces.remove(cell.double_capture_piece)
-
-                self.selected_piece = None
-                # self.player_turn = False
-
         self.selected_piece = None
 
-    def get_adjacent_cells(self, row, col):
-        y_dir = 1 if self.player_turn else -1  # Invert y if we're a computer piece
-        cell1 = (row - y_dir, col - 1)
-        cell2 = (row - y_dir, col + 1)
-        left_cell = Cell(cell1[0], cell1[1])
-        right_cell = Cell(cell2[0], cell2[1])
-        if not self.selected_piece.is_king:
-            return left_cell, right_cell
-        else:
-            cell3 = (row + y_dir, col - 1)
-            cell4 = (row + y_dir, col + 1)
-            back_left_cell = Cell(cell3[0], cell3[1])
-            back_right_cell = Cell(cell4[0], cell4[1])
-            return left_cell, right_cell, back_left_cell, back_right_cell
+
+    def find_piece(self, target_row, target_col):
+        for piece in self.pieces:
+            if piece.row == target_row and piece.col == target_col:
+                return piece
+        return None
+
+
+    def find_cell(self, row, col):
+        if not self.selected_piece:
+            return
+        if self.selected_piece.candidate_moves:
+            for i in self.selected_piece.candidate_moves:
+                if i.row == row and i.col == col:
+                    print('Found regular square')
+                    return i
+        if self.selected_piece.double_captures:
+            for i in self.selected_piece.double_captures:
+                if i.row == row and i.col == col:
+                    print('Found double capture square')
+                    return i
+        if self.selected_piece.capture_moves:
+            for i in self.selected_piece.capture_moves:
+                if i.row == row and i.col == col:
+                    print('Found regular capture square')
+                    return i
+
 
     def draw(self):
         self.window.fill((200, 200, 200))

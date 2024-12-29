@@ -337,13 +337,15 @@ class Board:
                 elif cell in piece.capture_moves:
                     self.pieces.remove(cell.capture_piece)
                     print('Removed single capture piece')
+                    self.player_score += 1
                 elif cell in piece.double_captures:
                     self.pieces.remove(cell.capture_piece)
                     self.pieces.remove(cell.double_capture_piece)
                     print('Removed double capture pieces')
+                    self.player_score += 2
 
                 self.selected_piece = None
-                self.player_score += 1
+
                 self.player_turn = False
 
         self.selected_piece = None
@@ -372,38 +374,24 @@ class Board:
         for row in range(8):
             for col in range(8):
                 piece = self.find_piece(row, col)
-                if piece:
-                    if piece.is_player is False:  # Check for AI pieces
-                        potential_moves = [
-                            (row + 1, col - 1),  # Forward-left
-                            (row + 1, col + 1),  # Forward-right
-                        ]
-                        if piece.is_king is True:
-                            potential_moves = [
-                                (row + 1, col - 1),  # Forward-left
-                                (row + 1, col + 1),  # Forward-right
-                                (row - 1, col - 1),  # Backward-left
-                                (row - 1, col + 1),  # Backward-right
-                            ]
-                        for target_row, target_col in potential_moves:
-                            if 0 <= target_row < 8 and 0 <= target_col < 8:  # Within boundaries
+                if piece and not piece.is_player:
+                    potential_moves = [i for i in self.get_adjacent_cells(piece.row, piece.col)
+                                       if self.in_boundaries(i.row, i.col)]
+                    for target_row, target_col in potential_moves:
+                        enemy_piece = self.find_piece(target_row, target_col)
+                        if enemy_piece and enemy_piece.is_player:
+                            landing_row = target_row + (target_row - row)
+                            landing_col = target_col + (target_col - col)
+                            if (
+                                    self.in_boundaries(landing_row, landing_col)
+                                    and not self.find_piece(landing_row, landing_col)
+                            ):
+                                self.ai_capture_moves.append(
+                                    ((row, col), (landing_row, landing_col), (target_row, target_col)))
 
-                                # Check if opponent's piece is in the target square
-                                enemy_piece = self.find_piece(target_row, target_col)
-                                if enemy_piece and enemy_piece.is_player:
-                                    # Calculate the landing square
-                                    landing_row = target_row + (target_row - row)
-                                    landing_col = target_col + (target_col - col)
-                                    if (
-                                            0 <= landing_row < 8 and 0 <= landing_col < 8
-                                            and not self.find_piece(landing_row, landing_col)
-                                    ):
-                                        self.ai_capture_moves.append(
-                                            ((row, col), (landing_row, landing_col), (target_row, target_col)))
-
-                                # Check for regular moves
-                                elif not self.find_piece(target_row, target_col):
-                                    self.ai_regular_moves.append(((row, col), (target_row, target_col)))
+                        # Check for regular moves
+                        elif not self.find_piece(target_row, target_col):
+                            self.ai_regular_moves.append(((row, col), (target_row, target_col)))
 
         if self.ai_capture_moves:
             # Execute a capture (prioritized over regular moves)

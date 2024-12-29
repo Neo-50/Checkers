@@ -3,7 +3,7 @@ import pygame
 
 from constants import *
 from piece import Piece
-from cell import Cell
+from move import Move
 from random import choice
 
 '''
@@ -36,6 +36,7 @@ class Board:
         ]
 
         self.selected_piece = None
+        self.ai_piece = None
         self.player_turn = True
         self.drag_offset_x = 0
         self.drag_offset_y = 0
@@ -65,6 +66,7 @@ class Board:
                 self.animation_progress = 1  # Clamp to finish animation
                 self.animating_piece.row, self.animating_piece.col = self.animation_end
                 self.animating_piece = None  # End animation
+                print('Animation ended for regular move')
 
                 # If animation ends and a capture was made, continue handling it
                 if self.waiting_to_remove:
@@ -72,7 +74,7 @@ class Board:
                     if current_time - self.delay_start_time >= 5000:  # 5-second delay
                         if self.pending_capture:
                             self.pieces.remove(self.pending_capture)
-                            # print(f"Piece removed: ({self.pending_capture.row}, {self.pending_capture.col})")
+                            print(f"Piece removed: ({self.pending_capture.row}, {self.pending_capture.col})")
                         self.pending_capture = None
                         self.waiting_to_remove = False
         if self.waiting_to_remove:
@@ -80,7 +82,7 @@ class Board:
             if current_time - self.delay_start_time >= 600:
                 if self.pending_capture:
                     self.pieces.remove(self.pending_capture)
-                    # print(f"Piece removed: ({self.pending_capture.row}, {self.pending_capture.col})")
+                    print(f"Piece removed: ({self.pending_capture.row}, {self.pending_capture.col})")
                 self.pending_capture = None
                 self.waiting_to_remove = False
         elif not self.player_turn:
@@ -102,10 +104,12 @@ class Board:
             start_y = (self.animation_start[0] * CELL_HEIGHT + CELL_HEIGHT // 2) + 50
             end_x = self.animation_end[1] * CELL_WIDTH + CELL_WIDTH // 2
             end_y = (self.animation_end[0] * CELL_HEIGHT + CELL_HEIGHT // 2) + 50
+            # print(f'Animation variables: start_x: {start_x}, start_y: {start_y}, end_x: {end_x}, end_y: {end_y}')
 
             # Interpolate position based on animation progress
             current_x = start_x + (end_x - start_x) * self.animation_progress
             current_y = start_y + (end_y - start_y) * self.animation_progress
+            # print(f'More animation variables: current_x: {current_x}, current_y: {current_y}')
 
             color = COLORS['ai_king'] if self.animating_piece.is_king else COLORS['black']
             pygame.draw.circle(self.window, color, (int(current_x), int(current_y)), PIECE_RADIUS)
@@ -166,11 +170,37 @@ class Board:
         self.window.blit(score_text, (score_text_x, score_text_y))
         self.window.blit(title_text, (10, score_text_y))
 
+
     def find_piece(self, target_row, target_col):
         for piece in self.pieces:
             if piece.row == target_row and piece.col == target_col:
                 return piece
         return None
+
+
+    def find_ai_piece(self, target_row, target_col):
+        for piece in self.pieces:
+            if piece.row == target_row and piece.col == target_col and not piece.is_player:
+                print(f'Beep beep! AI piece found at {piece.row}, {piece.col}')
+                return piece
+        return None
+
+
+    def find_cell(self, row, col):
+        if not self.selected_piece:
+            return
+        if self.selected_piece.candidate_moves:
+            for i in self.selected_piece.candidate_moves:
+                if i.row == row and i.col == col:
+                    return i
+        if self.selected_piece.double_captures:
+            for i in self.selected_piece.double_captures:
+                if i.row == row and i.col == col:
+                    return i
+        if self.selected_piece.capture_moves:
+            for i in self.selected_piece.capture_moves:
+                if i.row == row and i.col == col:
+                    return i
 
     def handle_mousedown(self, event):
         self.set_drag_attributes(event)
@@ -220,28 +250,11 @@ class Board:
                             self.in_boundaries(end[0], end[1]) and
                             self.find_piece(end[0], end[1]) is None
                         ):
-                        landing_square = Cell(end[0], end[1], adjacent_piece)
+                        landing_square = Move(end[0], end[1], adjacent_piece)
                         piece.capture_moves.append(landing_square)
                 elif adjacent_piece is None:
                     valid_moves.append(cell)
             piece.candidate_moves = valid_moves
-
-
-    def find_cell(self, row, col):
-        if not self.selected_piece:
-            return
-        if self.selected_piece.candidate_moves:
-            for i in self.selected_piece.candidate_moves:
-                if i.row == row and i.col == col:
-                    return i
-        if self.selected_piece.double_captures:
-            for i in self.selected_piece.double_captures:
-                if i.row == row and i.col == col:
-                    return i
-        if self.selected_piece.capture_moves:
-            for i in self.selected_piece.capture_moves:
-                if i.row == row and i.col == col:
-                    return i
 
 
     def check_double_captures(self):
@@ -270,7 +283,7 @@ class Board:
 
                         result = self.find_piece(first_capture_row, first_capture_col)
 
-                        landing_square = Cell(end[0], end[1], result, adjacent_piece, square.origin_square)
+                        landing_square = Move(end[0], end[1], result, adjacent_piece, square.origin_square)
                         piece.double_captures.append(landing_square)
 
 
@@ -278,16 +291,18 @@ class Board:
         y_dir = 1 if self.player_turn else -1  # Invert y if we're a computer piece
         cell1 = (row - y_dir, col - 1)
         cell2 = (row - y_dir, col + 1)
-        origin_square = Cell(row, col)
-        left_cell = Cell(cell1[0], cell1[1], None, None, origin_square)
-        right_cell = Cell(cell2[0], cell2[1], None, None, origin_square)
-        if not self.selected_piece.is_king:
+        origin_square = Move(row, col)
+        left_cell = Move(cell1[0], cell1[1], None, None, origin_square)
+        right_cell = Move(cell2[0], cell2[1], None, None, origin_square)
+        if self.player_turn and not self.selected_piece.is_king:
+            return left_cell, right_cell
+        elif not self.player_turn and not self.ai_piece.is_king:
             return left_cell, right_cell
         else:
             cell3 = (row + y_dir, col - 1)
             cell4 = (row + y_dir, col + 1)
-            back_left_cell = Cell(cell3[0], cell3[1],  None, None, origin_square)
-            back_right_cell = Cell(cell4[0], cell4[1],  None, None, origin_square)
+            back_left_cell = Move(cell3[0], cell3[1], None, None, origin_square)
+            back_right_cell = Move(cell4[0], cell4[1], None, None, origin_square)
             return left_cell, right_cell, back_left_cell, back_right_cell
 
 
@@ -371,43 +386,52 @@ class Board:
     def ai_move(self):
         self.ai_regular_moves.clear()
         self.ai_capture_moves.clear()
-        for row in range(8):
-            for col in range(8):
-                piece = self.find_piece(row, col)
-                if piece and not piece.is_player:
-                    potential_moves = [i for i in self.get_adjacent_cells(piece.row, piece.col)
-                                       if self.in_boundaries(i.row, i.col)]
-                    for target_row, target_col in potential_moves:
-                        enemy_piece = self.find_piece(target_row, target_col)
-                        if enemy_piece and enemy_piece.is_player:
-                            landing_row = target_row + (target_row - row)
-                            landing_col = target_col + (target_col - col)
-                            if (
-                                    self.in_boundaries(landing_row, landing_col)
-                                    and not self.find_piece(landing_row, landing_col)
-                            ):
-                                self.ai_capture_moves.append(
-                                    ((row, col), (landing_row, landing_col), (target_row, target_col)))
+        self.ai_piece = None
 
-                        # Check for regular moves
-                        elif not self.find_piece(target_row, target_col):
-                            self.ai_regular_moves.append(((row, col), (target_row, target_col)))
+        row = 2
+        front_row = [0, 2, 4, 6]
+        col = choice(front_row)
+
+        self.ai_piece = self.find_ai_piece(2, col)
+
+        if self.ai_piece:
+            print(f'AI piece is: {self.ai_piece.row}. {self.ai_piece.col}')
+            origin_square = Move(row, col)
+            potential_moves = [i for i in self.get_adjacent_cells(self.ai_piece.row, self.ai_piece.col)
+                               if self.in_boundaries(i.row, i.col)]
+            for square in potential_moves:
+                enemy_piece = self.find_piece(square.row, square.col)
+                if enemy_piece and enemy_piece.is_player:
+                    landing_row = square.row + (square.row - row)
+                    landing_col = square.col + (square.col - col)
+
+                    if (
+                            self.in_boundaries(landing_row, landing_col)
+                            and not self.find_piece(landing_row, landing_col)
+                    ):
+                        capture_move = Move(landing_row, landing_col, enemy_piece,
+                                              None, origin_square)
+                        self.ai_capture_moves.append(capture_move)
+
+                # Check for regular moves
+                elif not self.find_piece(square.row, square.col):
+                    regular_move = Move(square.row, square.col, None, None, origin_square)
+                    self.ai_regular_moves.append(regular_move)
+                    print(f'Regular move activated: {regular_move.row}, {regular_move.col}')
+                else:
+                    print('An error occurred!')
 
         if self.ai_capture_moves:
             # Execute a capture (prioritized over regular moves)
-            start, end, captured = choice(self.ai_capture_moves)
-
-            pygame.time.wait(50)
-
-            ai_piece = self.find_piece(start[0], start[1])
+            capture_move1 = choice(self.ai_capture_moves)
 
             # Set up animation
-            self.animating_piece = ai_piece
-            self.animation_start = (ai_piece.row, ai_piece.col)
-            self.animation_end = end
+            self.animating_piece = self.ai_piece
+            self.animation_start = [capture_move1.origin_square.row, capture_move1.origin_square.col]
+            self.animation_end = [capture_move1.row, capture_move1.col]
             self.animation_progress = 0  # Reset progress
 
-            capture_piece = self.find_piece(captured[0], captured[1])
+            capture_piece = capture_move1.capture_piece
 
             if capture_piece:
                 self.pending_capture = capture_piece
@@ -415,28 +439,24 @@ class Board:
                 self.waiting_to_remove = True
 
             # King if end of board
-            if end[0] == 7:
-                ai_piece.is_king = True
+            if capture_move1.row == 7:
+                self.ai_piece.is_king = True
 
             self.ai_score += 1
 
         elif self.ai_regular_moves:
             # Execute a regular move
-            start, end = choice(self.ai_regular_moves)
-
-            pygame.time.wait(50)
-
-            ai_piece = self.find_piece(start[0], start[1])
+            regular_move = choice(self.ai_regular_moves)
 
             # Set up animation
-            self.animating_piece = ai_piece
-            self.animation_start = (ai_piece.row, ai_piece.col)
-            self.animation_end = end
+            self.animating_piece = self.ai_piece
+            self.animation_start = [regular_move.origin_square.row, regular_move.origin_square.col]
+            self.animation_end = [regular_move.row, regular_move.col]
             self.animation_progress = 0  # Reset progress
 
             # King if end of board
-            if end[0] == 7:
-                ai_piece.is_king = True
+            if regular_move.row == 7:
+                self.ai_piece.is_king = True
 
         else:
             print("No valid moves for AI!")

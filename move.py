@@ -1,6 +1,6 @@
 
 
-class Cell:
+class Move:
     def __init__(self, row, col, capture_piece = None, double_capture_piece = None, origin_square = None):
         self.row = row
         self.col = col

@@ -43,6 +43,7 @@ class Board:
 
         self.player_score = 0
         self.ai_score = 0
+        self.ai_turn_count = 1
 
         self.ai_regular_moves = []
         self.ai_capture_moves = []
@@ -88,6 +89,7 @@ class Board:
         elif not self.player_turn:
             self.ai_move()
             self.player_turn = True
+            self.ai_turn_count += 1
 
     def draw(self):
         self.window.fill((200, 200, 200))
@@ -160,7 +162,7 @@ class Board:
         text_color = (0, 0, 0)  # Black color for the text
 
         score_text = font.render(f'Player: {self.player_score}    |    AI: {self.ai_score}', True, text_color)
-        title_text = font.render('Checkers', True, text_color)
+        title_text = font.render(f'Checkers         Turn: {self.ai_turn_count}', True, text_color)
 
         score_text_width = score_text.get_width()
 
@@ -360,7 +362,6 @@ class Board:
                     self.player_score += 2
 
                 self.selected_piece = None
-
                 self.player_turn = False
 
         self.selected_piece = None
@@ -388,34 +389,53 @@ class Board:
         self.ai_capture_moves.clear()
         self.ai_piece = None
 
-        row = 2
-        front_row = [0, 2, 4, 6]
-        col = choice(front_row)
+        ai_pieces = []
+        ai_candidate_pieces = []
 
-        self.ai_piece = self.find_ai_piece(2, col)
-
+        for row in range(8):
+            for col in range(8):
+                check_piece = self.find_ai_piece(row, col)
+                if check_piece:
+                    ai_pieces.append(check_piece)
+        for i in ai_pieces:
+            print(f'AI pieces: ({i.row}, {i.col})')
+        for p in ai_pieces:
+            self.ai_piece = p
+            p.regular_moves = [i for i in self.get_adjacent_cells(self.ai_piece.row, self.ai_piece.col)
+                                 if self.in_boundaries(i.row, i.col)
+                                 and not self.find_piece(i.row, i.col)]
+            p.candidate_moves = [i for i in self.get_adjacent_cells(self.ai_piece.row, self.ai_piece.col)
+                                 if self.in_boundaries(i.row, i.col)
+                                 and self.find_piece(i.row, i.col)]
+            for s in p.candidate_moves:
+                landing_row = s.row + (s.row - s.origin_square.row)
+                landing_col = s.col + (s.col - s.origin_square.col)
+                if (
+                        self.in_boundaries(landing_row, landing_col)
+                        and not self.find_piece(landing_row, landing_col)
+                ):
+                    capture_move = Move(landing_row, landing_col, s.capture_piece,
+                                        None, s.origin_square)
+                    self.ai_piece.capture_moves.append(capture_move)
+        for h in ai_pieces:
+            if h.regular_moves or h.capture_moves:
+                ai_candidate_pieces.append(h)
+        if ai_candidate_pieces:
+            self.ai_piece = choice(ai_candidate_pieces)
+            print(f'AI piece is: ({self.ai_piece.row}, {self.ai_piece.col})')
+'''
         if self.ai_piece:
-            print(f'AI piece is: {self.ai_piece.row}. {self.ai_piece.col}')
-            origin_square = Move(row, col)
-            potential_moves = [i for i in self.get_adjacent_cells(self.ai_piece.row, self.ai_piece.col)
-                               if self.in_boundaries(i.row, i.col)]
-            for square in potential_moves:
+            print(f'AI piece is: ({self.ai_piece.row}, {self.ai_piece.col})')
+            for square in self.ai_piece.candidate_moves:
                 enemy_piece = self.find_piece(square.row, square.col)
                 if enemy_piece and enemy_piece.is_player:
-                    landing_row = square.row + (square.row - row)
-                    landing_col = square.col + (square.col - col)
 
-                    if (
-                            self.in_boundaries(landing_row, landing_col)
-                            and not self.find_piece(landing_row, landing_col)
-                    ):
-                        capture_move = Move(landing_row, landing_col, enemy_piece,
-                                              None, origin_square)
-                        self.ai_capture_moves.append(capture_move)
+
+
 
                 # Check for regular moves
-                elif not self.find_piece(square.row, square.col):
-                    regular_move = Move(square.row, square.col, None, None, origin_square)
+                elif self.ai_piece.regular_moves:
+                    regular_move = choice(self.ai_piece.regular_moves)
                     self.ai_regular_moves.append(regular_move)
                     print(f'Regular move activated: {regular_move.row}, {regular_move.col}')
                 else:
@@ -460,4 +480,5 @@ class Board:
 
         else:
             print("No valid moves for AI!")
+'''
 

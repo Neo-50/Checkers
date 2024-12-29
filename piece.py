@@ -11,6 +11,7 @@ class Piece:
         self.hidden = hidden
         self.is_king = False
         self.candidate_moves = []
+        self.regular_moves = []
         self.capture_moves = []
         self.double_captures = []
 

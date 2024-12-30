@@ -349,12 +349,10 @@ class Board:
                     print('Error removing capture piece')
                 elif cell in piece.capture_moves:
                     self.pieces.remove(cell.capture_piece)
-                    print('Removed single capture piece')
                     self.player_score += 1
                 elif cell in piece.double_captures:
                     self.pieces.remove(cell.capture_piece)
                     self.pieces.remove(cell.double_capture_piece)
-                    print('Removed double capture pieces')
                     self.player_score += 2
 
                 self.selected_piece = None
@@ -422,38 +420,73 @@ class Board:
             elif a.regular_moves:
                 ai_regular_pieces.append(a)
         if ai_attack_pieces:
-
             for ap in ai_attack_pieces:
-                for cm in piece.capture_moves:
+                for cm in ap.capture_moves:
+                    ai_capture_branch_2 = [i for i in self.get_adjacent_cells(cm.row, cm.col)
+                                              if self.in_boundaries(i.row, i.col)
+                                              and (piece := self.find_piece(i.row, i.col)) is not None
+                                              and piece.is_player]
+                    if ai_capture_branch_2:
+                        for square2 in ai_capture_branch_2:
+                            landing_row2 = square2.row + (square2.row - square2.origin_square.row)
+                            landing_col2 = square2.col + (square2.col - square2.origin_square.col)
+                            enemy_piece = self.find_piece(square2.row, square2.col)
+                            if (
+                                    self.in_boundaries(landing_row2, landing_col2)
+                                    and not self.find_piece(landing_row2, landing_col2)
+                            ):
 
+                                first_capture_row = (ap.row + square2.origin_square.row) // 2
+                                first_capture_col = (ap.col + square2.origin_square.col) // 2
 
-                ai_double_attack_moves = [i for i in self.get_adjacent_cells(t.row, t.col)
-                                          if self.in_boundaries(t.row, t.col)
-                                          and (piece := self.find_piece(i.row, i.col)) is not None
-                                          and piece.is_player]
-            if ai_double_attack_moves:
+                                result = self.find_piece(first_capture_row, first_capture_col)
 
+                                double_attack_move = Move(landing_row2, landing_col2, result,
+                                                    enemy_piece, square2.origin_square)
 
-            self.ai_piece = choice(ai_attack_pieces)
-            capture_move_choice = choice(self.ai_piece.capture_moves)
+                                ap.double_captures.append(double_attack_move)
+            for ap in ai_attack_pieces:
+                if ap.double_captures:
+                    self.ai_piece = ap
+                    double_move_choice = choice(self.ai_piece.double_captures)
+                    # Set up animation
+                    self.animating_piece = self.ai_piece
+                    self.animation_start = [ap.row, ap.col]
+                    self.animation_end = [double_move_choice.row, double_move_choice.col]
+                    self.animation_progress = 0  # Reset progress
 
-            # Set up animation
-            self.animating_piece = self.ai_piece
-            self.animation_start = [capture_move_choice.origin_square.row, capture_move_choice.origin_square.col]
-            self.animation_end = [capture_move_choice.row, capture_move_choice.col]
-            self.animation_progress = 0  # Reset progress
+                    self.pending_capture = double_move_choice.capture_piece
+                    self.delay_start_time = pygame.time.get_ticks()
+                    self.waiting_to_remove = True
 
-            print(f'AI is attacking piece: ({capture_move_choice.capture_piece.row}, {capture_move_choice.capture_piece.col})')
-            self.pending_capture = capture_move_choice.capture_piece
-            self.delay_start_time = pygame.time.get_ticks()
-            self.waiting_to_remove = True
+                    # King if end of board
+                    if double_move_choice.row == 7:
+                        self.ai_piece.is_king = True
 
-            # King if end of board
-            if capture_move_choice.row == 7:
-                self.ai_piece.is_king = True
+                    self.ai_score += 2
+                    self.ai_turn_count += 1
 
-            self.ai_score += 1
-            self.ai_turn_count += 1
+                elif ap.capture_moves and not ap.double_captures:
+                    self.ai_piece = choice(ai_attack_pieces)
+
+                    capture_move_choice = choice(self.ai_piece.capture_moves)
+
+                    # Set up animation
+                    self.animating_piece = self.ai_piece
+                    self.animation_start = [capture_move_choice.origin_square.row, capture_move_choice.origin_square.col]
+                    self.animation_end = [capture_move_choice.row, capture_move_choice.col]
+                    self.animation_progress = 0  # Reset progress
+
+                    self.pending_capture = capture_move_choice.capture_piece
+                    self.delay_start_time = pygame.time.get_ticks()
+                    self.waiting_to_remove = True
+
+                    # King if end of board
+                    if capture_move_choice.row == 7:
+                        self.ai_piece.is_king = True
+
+                    self.ai_score += 1
+                    self.ai_turn_count += 1
 
         elif ai_regular_pieces:
             self.ai_piece = choice(ai_regular_pieces)

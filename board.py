@@ -422,6 +422,18 @@ class Board:
             elif a.regular_moves:
                 ai_regular_pieces.append(a)
         if ai_attack_pieces:
+
+            for ap in ai_attack_pieces:
+                for cm in piece.capture_moves:
+
+
+                ai_double_attack_moves = [i for i in self.get_adjacent_cells(t.row, t.col)
+                                          if self.in_boundaries(t.row, t.col)
+                                          and (piece := self.find_piece(i.row, i.col)) is not None
+                                          and piece.is_player]
+            if ai_double_attack_moves:
+
+
             self.ai_piece = choice(ai_attack_pieces)
             capture_move_choice = choice(self.ai_piece.capture_moves)
 
@@ -439,8 +451,8 @@ class Board:
             # King if end of board
             if capture_move_choice.row == 7:
                 self.ai_piece.is_king = True
-                print(f'AI piece is now a king: {self.ai_piece.is_king}')
 
+            self.ai_score += 1
             self.ai_turn_count += 1
 
         elif ai_regular_pieces:
@@ -456,7 +468,5 @@ class Board:
             # King if end of board
             if regular_move_choice.row == 7:
                 self.ai_piece.is_king = True
-                print(f'AI piece is now a king: {self.ai_piece.is_king}')
 
-            self.ai_score += 1
             self.ai_turn_count += 1

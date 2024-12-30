@@ -67,7 +67,7 @@ class Board:
                 self.animation_progress = 1  # Clamp to finish animation
                 self.animating_piece.row, self.animating_piece.col = self.animation_end
                 self.animating_piece = None  # End animation
-                print('Animation ended for regular move')
+                print('Animation ended')
 
                 # If animation ends and a capture was made, continue handling it
                 if self.waiting_to_remove:
@@ -183,7 +183,6 @@ class Board:
     def find_ai_piece(self, target_row, target_col):
         for piece in self.pieces:
             if piece.row == target_row and piece.col == target_col and not piece.is_player:
-                print(f'Beep beep! AI piece found at {piece.row}, {piece.col}')
                 return piece
         return None
 
@@ -384,21 +383,21 @@ class Board:
                                     (new_x, new_y),
                                     PIECE_RADIUS)
 
+    # noinspection PyUnboundLocalVariable
     def ai_move(self):
         self.ai_regular_moves.clear()
         self.ai_capture_moves.clear()
         self.ai_piece = None
 
         ai_pieces = []
-        ai_candidate_pieces = []
+        ai_attack_pieces = []
+        ai_regular_pieces = []
 
         for row in range(8):
             for col in range(8):
                 check_piece = self.find_ai_piece(row, col)
                 if check_piece:
                     ai_pieces.append(check_piece)
-        for i in ai_pieces:
-            print(f'AI pieces: ({i.row}, {i.col})')
         for p in ai_pieces:
             self.ai_piece = p
             p.regular_moves = [i for i in self.get_adjacent_cells(self.ai_piece.row, self.ai_piece.col)
@@ -406,33 +405,72 @@ class Board:
                                  and not self.find_piece(i.row, i.col)]
             p.candidate_moves = [i for i in self.get_adjacent_cells(self.ai_piece.row, self.ai_piece.col)
                                  if self.in_boundaries(i.row, i.col)
-                                 and self.find_piece(i.row, i.col)]
+                                 and (piece := self.find_piece(i.row, i.col)) is not None
+                                 and piece.is_player]
             for s in p.candidate_moves:
                 landing_row = s.row + (s.row - s.origin_square.row)
                 landing_col = s.col + (s.col - s.origin_square.col)
+                enemy_piece = self.find_piece(s.row, s.col)
                 if (
                         self.in_boundaries(landing_row, landing_col)
                         and not self.find_piece(landing_row, landing_col)
                 ):
-                    capture_move = Move(landing_row, landing_col, s.capture_piece,
+
+                    capture_move = Move(landing_row, landing_col, enemy_piece,
                                         None, s.origin_square)
                     self.ai_piece.capture_moves.append(capture_move)
-        for h in ai_pieces:
-            if h.regular_moves or h.capture_moves:
-                ai_candidate_pieces.append(h)
-        if ai_candidate_pieces:
-            self.ai_piece = choice(ai_candidate_pieces)
-            print(f'AI piece is: ({self.ai_piece.row}, {self.ai_piece.col})')
+        for a in ai_pieces:
+            if a.capture_moves:
+                ai_attack_pieces.append(a)
+            elif a.regular_moves:
+                ai_regular_pieces.append(a)
+        if ai_attack_pieces:
+            print('Initiating capture ai move')
+            self.ai_piece = choice(ai_attack_pieces)
+            capture_move_choice = choice(self.ai_piece.capture_moves)
+
+            # Set up animation
+            self.animating_piece = self.ai_piece
+            self.animation_start = [capture_move_choice.origin_square.row, capture_move_choice.origin_square.col]
+            self.animation_end = [capture_move_choice.row, capture_move_choice.col]
+            self.animation_progress = 0  # Reset progress
+
+            print(f'AI is attacking piece: ({capture_move_choice.capture_piece.row}, {capture_move_choice.capture_piece.col}')
+            self.pending_capture = capture_move_choice.capture_piece
+            self.delay_start_time = pygame.time.get_ticks()
+            self.waiting_to_remove = True
+
+            # King if end of board
+            if capture_move_choice.row == 7:
+                capture_move_choice.is_king = True
+
+            self.ai_score += 1
+            self.ai_turn_count += 1
+        elif ai_regular_pieces:
+            print('Initiating regular ai move')
+            self.ai_piece = choice(ai_regular_pieces)
+            regular_move_choice = choice(self.ai_piece.regular_moves)
+
+            # Set up animation
+            self.animating_piece = self.ai_piece
+            self.animation_start = [regular_move_choice.origin_square.row, regular_move_choice.origin_square.col]
+            self.animation_end = [regular_move_choice.row, regular_move_choice.col]
+            self.animation_progress = 0  # Reset progress
+
+            # King if end of board
+            if regular_move_choice.row == 7:
+                regular_move_choice.is_king = True
+
+            self.ai_score += 1
+            self.ai_turn_count += 1
+
 '''
         if self.ai_piece:
             print(f'AI piece is: ({self.ai_piece.row}, {self.ai_piece.col})')
             for square in self.ai_piece.candidate_moves:
                 enemy_piece = self.find_piece(square.row, square.col)
                 if enemy_piece and enemy_piece.is_player:
-
-
-
-
+                
                 # Check for regular moves
                 elif self.ai_piece.regular_moves:
                     regular_move = choice(self.ai_piece.regular_moves)
@@ -445,24 +483,7 @@ class Board:
             # Execute a capture (prioritized over regular moves)
             capture_move1 = choice(self.ai_capture_moves)
 
-            # Set up animation
-            self.animating_piece = self.ai_piece
-            self.animation_start = [capture_move1.origin_square.row, capture_move1.origin_square.col]
-            self.animation_end = [capture_move1.row, capture_move1.col]
-            self.animation_progress = 0  # Reset progress
 
-            capture_piece = capture_move1.capture_piece
-
-            if capture_piece:
-                self.pending_capture = capture_piece
-                self.delay_start_time = pygame.time.get_ticks()
-                self.waiting_to_remove = True
-
-            # King if end of board
-            if capture_move1.row == 7:
-                self.ai_piece.is_king = True
-
-            self.ai_score += 1
 
         elif self.ai_regular_moves:
             # Execute a regular move

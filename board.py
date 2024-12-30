@@ -47,6 +47,7 @@ class Board:
 
         self.ai_regular_moves = []
         self.ai_capture_moves = []
+        self.next_capture = None
 
         self.delay_start_time = None
         self.waiting_to_remove = False
@@ -61,35 +62,38 @@ class Board:
 
     def update(self):
         if self.animating_piece:
-            # Calculate animation progress
+            # Process animation progress
             self.animation_progress += self.animation_speed
             if self.animation_progress >= 1:
-                self.animation_progress = 1  # Clamp to finish animation
+                self.animation_progress = 1  # Clamp progress
                 self.animating_piece.row, self.animating_piece.col = self.animation_end
                 self.animating_piece = None  # End animation
 
-                # If animation ends and a capture was made, continue handling it
-                if self.waiting_to_remove:
-                    current_time = pygame.time.get_ticks()
-                    if current_time - self.delay_start_time >= 5000:  # 5-second delay
-                        if self.pending_capture:
-                            self.pieces.remove(self.pending_capture)
-                            print(f"Piece removed: ({self.pending_capture.row}, {self.pending_capture.col})")
-                        self.pending_capture = None
-                        self.waiting_to_remove = False
-        if self.waiting_to_remove:
-            current_time = pygame.time.get_ticks()
-            if current_time - self.delay_start_time >= 600:
+                # Handle capture
                 if self.pending_capture:
+                    print(f'Removing piece: ({self.pending_capture.row}, {self.pending_capture.col})')
                     self.pieces.remove(self.pending_capture)
-                    print(f"Piece removed: ({self.pending_capture.row}, {self.pending_capture.col})")
-                self.pending_capture = None
-                self.waiting_to_remove = False
+                    self.pending_capture = None
+                    self.waiting_to_remove = False
+
+                    # Check for next capture
+                    if self.next_capture:
+                        self.animation_start = self.next_capture["start"]
+                        self.animation_end = self.next_capture["end"]
+                        self.pending_capture = self.next_capture["capture_piece"]
+                        self.animating_piece = self.ai_piece
+                        self.animation_progress = 0  # Reset animation
+                        self.next_capture = None
+                    else:
+                        # End AI turn
+                        if self.animation_end[0] == 7:  # King if at the end
+                            self.ai_piece.is_king = True
+                        self.player_turn = True
         elif not self.player_turn:
             self.ai_move()
-            self.player_turn = True
-            self.ai_turn_count += 1
 
+
+    # if current_time - self.delay_start_time >= 5000:  # 5-second delay
     def draw(self):
         self.window.fill((200, 200, 200))
         self.draw_grid()
@@ -449,22 +453,25 @@ class Board:
                 if ap.double_captures:
                     self.ai_piece = ap
                     double_move_choice = choice(self.ai_piece.double_captures)
-                    # Set up animation
+
+                    # Set up animation for the first capture
                     self.animating_piece = self.ai_piece
                     self.animation_start = [ap.row, ap.col]
-                    self.animation_end = [double_move_choice.row, double_move_choice.col]
+                    self.animation_end = [double_move_choice.origin_square.row,
+                                          double_move_choice.origin_square.col]
                     self.animation_progress = 0  # Reset progress
 
                     self.pending_capture = double_move_choice.capture_piece
-                    self.delay_start_time = pygame.time.get_ticks()
                     self.waiting_to_remove = True
+                    self.ai_score += 1
 
-                    # King if end of board
-                    if double_move_choice.row == 7:
-                        self.ai_piece.is_king = True
-
-                    self.ai_score += 2
-                    self.ai_turn_count += 1
+                    # Save the second capture details for later
+                    self.next_capture = {
+                        "start": [double_move_choice.origin_square.row, double_move_choice.origin_square.col],
+                        "end": [double_move_choice.row, double_move_choice.col],
+                        "capture_piece": double_move_choice.double_capture_piece
+                    }
+                    self.player_turn = True
 
                 elif ap.capture_moves and not ap.double_captures:
                     self.ai_piece = choice(ai_attack_pieces)
@@ -478,7 +485,8 @@ class Board:
                     self.animation_progress = 0  # Reset progress
 
                     self.pending_capture = capture_move_choice.capture_piece
-                    self.delay_start_time = pygame.time.get_ticks()
+                    # if self.delay_start_time is None:
+                    #     self.delay_start_time = pygame.time.get_ticks()
                     self.waiting_to_remove = True
 
                     # King if end of board
@@ -487,6 +495,7 @@ class Board:
 
                     self.ai_score += 1
                     self.ai_turn_count += 1
+                    self.player_turn = True
 
         elif ai_regular_pieces:
             self.ai_piece = choice(ai_regular_pieces)
@@ -503,3 +512,4 @@ class Board:
                 self.ai_piece.is_king = True
 
             self.ai_turn_count += 1
+            self.player_turn = True

@@ -29,7 +29,7 @@ class Game:
             self.board.update()
             self.board.draw()
             pygame.display.flip()
-            pygame.time.Clock().tick(60)
+            pygame.time.Clock().tick(40)
 
     def handle_events(self):
         for event in pygame.event.get():
@@ -42,4 +42,5 @@ class Game:
                     if self.board.selected_piece:
                         self.board.draw_dragging_piece()
                 elif event.type == pygame.MOUSEBUTTONUP:
-                    self.board.handle_mouseup(event)
+                    if self.board.selected_piece:
+                        self.board.handle_mouseup(event)

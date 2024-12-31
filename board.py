@@ -43,7 +43,7 @@ class Board:
 
         self.player_score = 0
         self.ai_score = 0
-        self.ai_turn_count = 1
+        self.turn_count = 1
         self.wait_a_bit = False
 
         self.ai_regular_moves = []
@@ -163,7 +163,7 @@ class Board:
         text_color = (0, 0, 0)  # Black color for the text
 
         score_text = font.render(f'Player: {self.player_score}    |    AI: {self.ai_score}', True, text_color)
-        title_text = font.render(f'Checkers         Turn: {self.ai_turn_count}', True, text_color)
+        title_text = font.render(f'Checkers         Turn: {self.turn_count}', True, text_color)
 
         score_text_width = score_text.get_width()
 
@@ -456,7 +456,6 @@ class Board:
                     self.delay_start_time = pygame.time.get_ticks()
                     self.pending_capture = double_move_choice.capture_piece
                     self.waiting_to_remove = True
-                    self.ai_score += 1
 
                     # Save the second capture details for later
                     self.next_capture = {
@@ -464,6 +463,8 @@ class Board:
                         "end": [double_move_choice.row, double_move_choice.col],
                         "capture_piece": double_move_choice.double_capture_piece
                     }
+                    self.ai_score += 2
+                    self.turn_count += 1
                     self.player_turn = True
 
                 elif ap.capture_moves and not ap.double_captures:
@@ -486,7 +487,7 @@ class Board:
                         self.ai_piece.is_king = True
 
                     self.ai_score += 1
-                    self.ai_turn_count += 1
+                    self.turn_count += 1
                     self.player_turn = True
 
         elif ai_regular_pieces:
@@ -503,5 +504,5 @@ class Board:
             if regular_move_choice.row == 7:
                 self.ai_piece.is_king = True
 
-            self.ai_turn_count += 1
+            self.turn_count += 1
             self.player_turn = True

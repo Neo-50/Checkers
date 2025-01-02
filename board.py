@@ -1,6 +1,4 @@
 import pygame
-# from random import choice
-
 from constants import *
 from piece import Piece
 from move import Move
@@ -49,6 +47,8 @@ class Board:
         self.delay_start_time = None
         self.waiting_to_remove = False
         self.pending_capture = None
+        self.capture_display = ''
+        self.capture_display_start_time = 0
 
         # Animation state variables
         self.animating_piece = None
@@ -168,8 +168,14 @@ class Board:
         font = pygame.font.SysFont('Arial', 20)
         text_color = (0, 0, 0)  # Black color for the text
 
+        if self.capture_display:
+            current_time = pygame.time.get_ticks()
+            if self.capture_display_start_time + 3000 <= current_time:
+                self.capture_display = ''
+                self.capture_display_start_time = 0
+
         score_text = font.render(f'Player: {self.player_score}    |    AI: {self.ai_score}', True, text_color)
-        title_text = font.render(f'Checkers         Turn: {self.turn_count}', True, text_color)
+        title_text = font.render(f'Checkers         Turn: {self.turn_count}        {self.capture_display}',True, text_color)
 
         score_text_width = score_text.get_width()
 
@@ -334,7 +340,12 @@ class Board:
 
             # INITIATE CAPTURE MOVE
             elif cell in piece.capture_moves or piece.double_captures:
-
+                if piece.double_captures:
+                    self.capture_display = 'Double capture move!'
+                    self.capture_display_start_time = pygame.time.get_ticks()
+                elif piece.capture_moves:
+                    self.capture_display = 'Capture move!'
+                    self.capture_display_start_time = pygame.time.get_ticks()
                 # Update attributes to move the piece object
                 piece.row = target_row
                 piece.col = target_col
@@ -469,6 +480,14 @@ class Board:
                         "end": [double_move_choice.row, double_move_choice.col],
                         "capture_piece": double_move_choice.double_capture_piece
                     }
+                    # King if end of board
+                    if double_move_choice.row == 7:
+                        self.ai_piece.is_king = True
+                        self.capture_display = 'Double capture move with King promotion!'
+                        self.capture_display_start_time = pygame.time.get_ticks()
+                    else:
+                        self.capture_display = 'Double capture move!'
+                        self.capture_display_start_time = pygame.time.get_ticks()
                     self.ai_score += 2
                     self.turn_count += 1
                     self.player_turn = True
@@ -491,16 +510,75 @@ class Board:
                     # King if end of board
                     if capture_move_choice.row == 7:
                         self.ai_piece.is_king = True
-
+                        self.capture_display = 'Capture move with King promotion!'
+                        self.capture_display_start_time = pygame.time.get_ticks()
+                    else:
+                        self.capture_display = 'Capture move!'
+                        self.capture_display_start_time = pygame.time.get_ticks()
                     self.ai_score += 1
                     self.turn_count += 1
                     self.player_turn = True
 
         elif ai_regular_pieces:
-            self.ai_piece = choice(ai_regular_pieces)
-            regular_move_choice = choice(self.ai_piece.regular_moves)
+            for x in ai_regular_pieces:
+                for move3 in x.regular_moves:
+                    x.safe_moves.clear()
+                    check_enemies = [i for i in self.get_adjacent_cells(move3.row, move3.col)
+                               if self.in_boundaries(i.row, i.col)
+                               and (piece8 := self.find_piece(i.row, i.col)) is not None
+                               and piece8.is_player]
+                    if not check_enemies:
+                        x.safe_moves.append(move3)
+            safe_pieces = []
+
+            for z in ai_regular_pieces:
+                if z.safe_moves:
+                    safe_pieces.append(z)
+
+            for z in ai_regular_pieces:
+                if z.safe_moves:
+                    safe_pieces.append(z)
+
+            if safe_pieces:
+                # Filter for kings and pieces with the highest row number in safe_pieces
+                print('Safe piece found!')
+                max_row = max(p.row for p in safe_pieces)
+                prioritized_pieces = [p for p in safe_pieces if p.is_king or p.row == max_row]
+                for pp in prioritized_pieces:
+                    print('Priority safe pieces: ', pp.row, pp.col)
+            else:
+                # If no safe pieces, fallback to regular pieces
+                print('No safe pieces found :(')
+                max_row = max(p.row for p in ai_regular_pieces)
+                prioritized_pieces = [p for p in ai_regular_pieces if p.row == max_row]
+                for pp in prioritized_pieces:
+                    print('Priority non-safe pieces: ', pp.row, pp.col)
+
+            # Choose a piece from the prioritized list
+            self.ai_piece = choice(prioritized_pieces)
+            print(f'Chosen piece at: {self.ai_piece.row}, {self.ai_piece.col}')
+
+            # Prioritize moves for the chosen piece
+            moves = self.ai_piece.safe_moves if safe_pieces else self.ai_piece.regular_moves
+            max_target_row = max(m.row for m in moves)
+            prioritized_moves = [m for m in moves if m.row == max_target_row]
+
+            # Choose a move from the prioritized moves
+            regular_move_choice = choice(prioritized_moves)
+            print(f'Chosen move to: {regular_move_choice.row}, {regular_move_choice.col}')
 
             # Set up animation
+            self.animating_piece = self.ai_piece
+            self.animation_start = [regular_move_choice.origin_square.row, regular_move_choice.origin_square.col]
+            self.animation_end = [regular_move_choice.row, regular_move_choice.col]
+            self.animation_progress = 0  # Reset progress
+
+            # Set up animation (regular_move_choice is guaranteed to be defined here)
+            self.animating_piece = self.ai_piece
+            self.animation_start = [regular_move_choice.origin_square.row, regular_move_choice.origin_square.col]
+            self.animation_end = [regular_move_choice.row, regular_move_choice.col]
+            self.animation_progress = 0  # Reset progress
+
             self.animating_piece = self.ai_piece
             self.animation_start = [regular_move_choice.origin_square.row, regular_move_choice.origin_square.col]
             self.animation_end = [regular_move_choice.row, regular_move_choice.col]
@@ -512,3 +590,5 @@ class Board:
 
             self.turn_count += 1
             self.player_turn = True
+        else:
+            print('No valid moves for AI!')

@@ -14,6 +14,7 @@ class Piece:
         self.regular_moves = []
         self.capture_moves = []
         self.double_captures = []
+        self.safe_moves = []
 
     def get_color(self):
         if self.is_player:

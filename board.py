@@ -39,6 +39,7 @@ class Board:
         self.ai_score = 0
         self.turn_count = 1
         self.wait_a_bit = False
+        self.game_over = False
 
         self.ai_regular_moves = []
         self.ai_capture_moves = []
@@ -71,6 +72,17 @@ class Board:
         if self.wait_a_bit:
             pygame.time.wait(500)
             self.wait_a_bit = False
+        player_pieces_exist = any(piece.is_player for piece in self.pieces)
+        if not player_pieces_exist:
+            self.game_over = True
+            self.capture_display = "Game over!"
+            self.capture_display_start_time = pygame.time.get_ticks() + 5000
+        for c in self.pieces:
+            ai_pieces_exist = self.find_piece(c.row, c.col)
+            if not ai_pieces_exist:
+                self.game_over = True
+                self.capture_display = "Game over!"
+                self.capture_display_start_time = pygame.time.get_ticks() + 5000
         if self.animating_piece:
             # Process animation progress
             self.animation_progress += self.animation_speed
@@ -332,8 +344,10 @@ class Board:
                 piece.col = target_col
 
                 # King if end of board
-                if target_row == 0:
+                if target_row == 0 and not piece.is_king:
                     piece.is_king = True
+                    self.capture_display = 'King piece for player!'
+                    self.capture_display_start_time = pygame.time.get_ticks()
 
                 self.selected_piece = None
                 self.player_turn = False
@@ -481,7 +495,7 @@ class Board:
                         "capture_piece": double_move_choice.double_capture_piece
                     }
                     # King if end of board
-                    if double_move_choice.row == 7:
+                    if double_move_choice.row == 7 and not self.ai_piece.is_king:
                         self.ai_piece.is_king = True
                         self.capture_display = 'Double capture move with King promotion!'
                         self.capture_display_start_time = pygame.time.get_ticks()
@@ -508,7 +522,7 @@ class Board:
                     self.waiting_to_remove = True
 
                     # King if end of board
-                    if capture_move_choice.row == 7:
+                    if capture_move_choice.row == 7 and not self.ai_piece.is_king:
                         self.ai_piece.is_king = True
                         self.capture_display = 'Capture move with King promotion!'
                         self.capture_display_start_time = pygame.time.get_ticks()
@@ -585,8 +599,10 @@ class Board:
             self.animation_progress = 0  # Reset progress
 
             # King if end of board
-            if regular_move_choice.row == 7:
+            if regular_move_choice.row == 7  and not self.ai_piece.is_king:
                 self.ai_piece.is_king = True
+                self.capture_display = 'King piece for AI!'
+                self.capture_display_start_time = pygame.time.get_ticks()
 
             self.turn_count += 1
             self.player_turn = True

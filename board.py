@@ -13,28 +13,24 @@ Responsibilies:
     3. Make moves
 '''
 
+PIECE_POSITIONS = {
+    'computer': [
+        (0, 0), (0, 2), (0, 4), (0, 6),
+        (1, 1), (1, 3), (1, 5), (1, 7),
+        (2, 0), (2, 2), (2, 4), (2, 6)
+    ],
+    'player': [
+        (5, 1), (5, 3), (5, 5), (5, 7),
+        (6, 0), (6, 2), (6, 4), (6, 6),
+        (7, 1), (7, 3), (7, 5), (7, 7)
+    ]
+}
 
 class Board:
     def __init__(self, window):
         self.window = window
-        self.pieces = [
-            # Computer
-            Piece(self.window, 0, 0, False, False), Piece(self.window, 0, 2, False, False),
-            Piece(self.window, 0, 4, False, False), Piece(self.window, 0, 6, False, False),
-            Piece(self.window, 1, 1, False, False), Piece(self.window, 1, 3, False, False),
-
-            Piece(self.window, 1, 5, False, False), Piece(self.window, 1, 7, False, False),
-            Piece(self.window, 2, 0, False, False), Piece(self.window, 2, 2, False, False),
-            Piece(self.window, 2, 4, False, False), Piece(self.window, 2, 6, False, False),
-            # Player
-            Piece(self.window, 5, 7, True, False), Piece(self.window, 5, 5, True, False),
-            Piece(self.window, 5, 3, True, False), Piece(self.window, 5, 1, True, False),
-            Piece(self.window, 6, 6, True, False), Piece(self.window, 6, 4, True, False),
-            Piece(self.window, 6, 2, True, False), Piece(self.window, 6, 0, True, False),
-            Piece(self.window, 7, 7, True, False), Piece(self.window, 7, 5, True, False),
-            Piece(self.window, 7, 3, True, False), Piece(self.window, 7, 1, True, False)
-        ]
-
+        self.pieces = []
+        self.init_pieces()
         self.selected_piece = None
         self.ai_piece = None
         self.player_turn = True
@@ -60,6 +56,16 @@ class Board:
         self.animation_end = None
         self.animation_progress = 0  # Progress percentage (0 to 1)
         self.animation_speed = 0.05  # Adjust for animation speed
+
+    def init_pieces(self):
+        self.pieces = []
+        for square in PIECE_POSITIONS['player']:
+            self.pieces.append(self.make_piece(square[0], square[1], True))
+        for square in PIECE_POSITIONS['computer']:
+            self.pieces.append(self.make_piece(square[0], square[1], False))
+
+    def make_piece(self, row, col, is_player):
+        return Piece(self.window, row, col, is_player, False)
 
     def update(self):
         if self.wait_a_bit:

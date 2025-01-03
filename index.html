@@ -3,32 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Checkers</title>
-    
-    <!-- Link to PyScript CDN -->
-    <script defer src="https://pyscript.net/latest/pyscript.js"></script>
+    <title>Checkers Game</title>
+    <style>
+        /* Add some basic styling here */
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 2px solid black;
+        }
+    </style>
 </head>
 <body>
+    <h1>Checkers Game</h1>
+    <canvas id="gameCanvas" width="800" height="800"></canvas>
 
-    <h1>Checkers with PyScript</h1>
-
-    <!-- Button to trigger the game -->
-    <button id="start-game-btn">Start Game</button>
-
-    <!-- PyScript Block -->
-    <py-script id="game-script">
-        print("Hello, PyScript!")
-    </py-script>
-
-    <!-- Output Box where the result will be displayed -->
-    <div id="game-output"></div>
-
-    <!-- Add Event Listener to Button -->
-    <script>
-        // When the button is clicked, trigger the Python function
-        document.getElementById("start-game-btn").addEventListener("click", function() {
-            pyscript.run_python('start_game(event)');  // Run the Python function when clicked
-        });
-    </script>
+    <!-- Link to your game.js file -->
+    <script src="game.js"></script>
 </body>
 </html>

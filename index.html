@@ -4,29 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Interactive Checkers</title>
-
-    <!-- Link to PyScript CDN -->
+    <!-- Correct PyScript link -->
     <script defer src="https://pyscript.net/latest/pyscript.js"></script>
 </head>
 <body>
     <h1>Checkers with PyScript</h1>
 
-    <!-- Button to start game -->
-    <button id="start-game-btn">Start Game</button>
+    <!-- Interactive game console -->
+    <textarea id="log" rows="10" cols="50" readonly></textarea><br>
+    <button onclick="runGame()">Start Game</button>
 
-    <!-- PyScript block for Python code -->
+    <!-- PyScript Tag -->
     <py-script>
-        # Your Python code goes here
-        def start_game(event):
-            print("Game Started")
-            # Add your game logic here
+        from pyscript import Element
+
+        # Function to update the text in the textarea
+        def run_game():
+            log = Element("log")
+            log.write("Game starting...\n")
+            # Game logic goes here
+            log.write("Player moved to position (3,4).\n")
+            log.write("AI responded with move to (5,6).\n")
+        
     </py-script>
 
     <script>
-        // Adding event listener to the start game button
-        document.getElementById("start-game-btn").addEventListener("click", function() {
-            pyscript.run_python('start_game(event)');
-        });
+        // Function to run the game when the button is clicked
+        function runGame() {
+            pyscript.run("run_game()")
+        }
     </script>
 </body>
 </html>
